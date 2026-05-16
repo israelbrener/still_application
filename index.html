@@ -1,0 +1,3916 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Mindful Focus</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    *::selection { background: transparent; color: inherit; }
+    *::-moz-selection { background: transparent; color: inherit; }
+    html, body { width: 100%; height: 100%; overflow: hidden; font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: white; background: #061018; }
+    button { font: inherit; color: inherit; }
+    .screen { position: fixed; inset: 0; display: none; overflow: hidden; }
+    .screen.active { display: flex; }
+
+    #home {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 0 20px;
+      background:
+        linear-gradient(180deg, rgba(0, 8, 18, .015), rgba(0, 8, 18, .055) 52%, rgba(0, 8, 18, .16) 100%),
+        url('home_premium_natural_background.png') center / cover no-repeat;
+    }
+    #home::after { content: none; }
+    .home-inner {
+      position: relative;
+      z-index: 2;
+      height: 100%;
+      width: min(430px, 100%);
+      display: grid;
+      grid-template-rows: 1fr auto 1fr;
+      align-items: center;
+      justify-items: center;
+      padding: 7vh 0 9vh;
+    }
+    .brand { display: none; }
+
+    .global-sound {
+      position: fixed;
+      top: clamp(18px, 3vw, 34px);
+      right: clamp(18px, 3vw, 38px);
+      z-index: 1000;
+      width: clamp(54px, 6vw, 72px);
+      height: clamp(54px, 6vw, 72px);
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,.20);
+      background: rgba(7, 18, 27, .34);
+      box-shadow: 0 14px 42px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.08);
+      backdrop-filter: blur(12px);
+      cursor: pointer;
+      transition: transform .2s ease, background .2s ease, opacity .2s ease;
+    }
+    .global-sound:hover { transform: scale(1.04); background: rgba(38, 57, 70, .48); }
+    .global-sound svg { width: 32px; height: 32px; fill: none; stroke: white; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .global-sound .speaker { fill: none; }
+    .global-sound .mute-x { display: none; }
+    .global-sound.muted { opacity: .55; }
+    .global-sound.muted .wave { display: none; }
+    .global-sound.muted .mute-x { display: block; }
+
+    .timer-controls {
+      display: grid;
+      grid-template-columns: 54px 88px 54px;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 28px;
+      opacity: .92;
+    }
+    .timer-arrow, .unit-btn {
+      height: 48px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.20);
+      background: rgba(18, 35, 48, .42);
+      color: rgba(255,255,255,.94);
+      backdrop-filter: blur(14px);
+      cursor: pointer;
+      box-shadow: 0 12px 30px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.10);
+      transition: transform .16s ease, background .2s ease, border-color .2s ease;
+    }
+    .timer-arrow {
+      width: 54px;
+      font-size: 28px;
+      font-weight: 250;
+      line-height: 1;
+      display: grid;
+      place-items: center;
+    }
+    .unit-btn {
+      width: 88px;
+      font-size: 13px;
+      letter-spacing: 3px;
+      font-weight: 500;
+      opacity: .96;
+    }
+    .timer-arrow:hover, .unit-btn:hover { background: rgba(54, 76, 90, .55); border-color: rgba(255,255,255,.30); }
+    .timer-arrow:active, .unit-btn:active, .global-sound:active { transform: scale(.94); }
+
+    .timer {
+      grid-row: 2;
+      text-align: center;
+      transform: translateY(-9vh);
+      text-shadow: 0 10px 36px rgba(0,0,0,.62);
+    }
+    .time-value {
+      font-size: clamp(116px, 34vw, 168px);
+      font-weight: 200;
+      line-height: .88;
+      letter-spacing: -5px;
+      font-variant-numeric: tabular-nums;
+    }
+    .time-unit {
+      margin-top: 12px;
+      font-size: 20px;
+      letter-spacing: 7px;
+      font-weight: 400;
+      opacity: .62;
+    }
+    .timer-controls {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-top: 22px;
+      opacity: 0;
+      transition: opacity .25s ease;
+    }
+    .timer:hover .timer-controls, .timer:focus-within .timer-controls { opacity: .82; }
+    .round-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,.22);
+      background: rgba(27, 45, 58, .38);
+      backdrop-filter: blur(10px);
+      cursor: pointer;
+      box-shadow: 0 8px 22px rgba(0,0,0,.18);
+    }
+    .mode-picker {
+      grid-row: 3;
+      align-self: end;
+      width: min(405px, 86vw);
+      height: 86px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-radius: 999px;
+      padding: 10px 22px;
+      margin-bottom: 7vh;
+      background: rgba(62, 87, 101, .72);
+      border: 1px solid rgba(255,255,255,.16);
+      box-shadow: 0 16px 48px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.12);
+      backdrop-filter: blur(16px);
+    }
+    .arrow {
+      width: 48px;
+      height: 48px;
+      border: 0;
+      background: transparent;
+      border-radius: 50%;
+      font-size: 40px;
+      font-weight: 200;
+      line-height: 1;
+      cursor: pointer;
+      opacity: .9;
+    }
+    .start {
+      flex: 1;
+      border: 0;
+      background: transparent;
+      padding: 14px 5px;
+      letter-spacing: 1.5px;
+      font-size: clamp(24px, 6vw, 32px);
+      font-weight: 400;
+      cursor: pointer;
+    }
+
+    .topbar { position: absolute; left: 18px; right: clamp(98px, 9vw, 128px); top: 18px; z-index: 10; display: flex; justify-content: space-between; align-items: center; }
+    .back { width: 46px; height: 46px; border-radius: 50%; border: 1px solid rgba(255,255,255,.26); background: rgba(0,0,0,.24); backdrop-filter: blur(10px); cursor: pointer; font-size: 22px; }
+    #dotmove .topbar {
+      left: 34px;
+      right: 34px;
+      top: clamp(30px, 5vh, 56px);
+      justify-content: center;
+      pointer-events: none;
+    }
+    #dotmove .topbar .back {
+      position: absolute;
+      left: 0;
+      pointer-events: auto;
+    }
+    #dotmove .topbar .countdown {
+      background: transparent;
+      border: none;
+      box-shadow: none;
+      backdrop-filter: none;
+      font-size: clamp(46px, 5.5vw, 78px);
+      font-weight: 300;
+      letter-spacing: 2px;
+      padding: 0;
+      text-shadow: 0 10px 32px rgba(0,0,0,.52);
+    }
+    #breathing .topbar {
+      left: 34px;
+      right: 34px;
+      top: clamp(30px, 5vh, 56px);
+      justify-content: center;
+      pointer-events: none;
+    }
+    #breathing .topbar .back {
+      position: absolute;
+      left: 0;
+      pointer-events: auto;
+    }
+    #breathing .topbar .countdown {
+      background: transparent;
+      border: none;
+      box-shadow: none;
+      backdrop-filter: none;
+      font-size: clamp(48px, 5.8vw, 82px);
+      font-weight: 300;
+      letter-spacing: 2px;
+      padding: 0;
+      text-shadow: 0 10px 32px rgba(0,0,0,.52);
+    }
+    .countdown { padding: 10px 16px; border-radius: 999px; border: 1px solid rgba(255,255,255,.22); background: rgba(0,0,0,.24); backdrop-filter: blur(10px); letter-spacing: 2px; font-variant-numeric: tabular-nums; }
+
+    #meditation {
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      padding: clamp(92px, 10vh, 112px) 24px clamp(28px, 5vh, 54px);
+      background:
+        radial-gradient(circle at 50% 48%, rgba(12, 31, 46, .015), rgba(0, 7, 12, .14) 68%, rgba(0, 4, 8, .36) 100%),
+        linear-gradient(rgba(0, 8, 14, .02), rgba(0, 8, 14, .10)),
+        url('meditation_premium_natural_background.png') center / cover no-repeat;
+    }
+    .meditation-center {
+      position: relative;
+      z-index: 2;
+      width: min(760px, 94vw);
+      min-height: 0;
+      display: grid;
+      grid-template-rows: auto auto auto;
+      justify-items: center;
+      align-content: center;
+      gap: clamp(22px, 3.1vh, 36px);
+      text-align: center;
+    }
+    .meditation-icon-glow {
+      width: clamp(142px, 15vw, 199px);
+      height: clamp(142px, 15vw, 199px);
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: rgba(14, 31, 48, .18);
+      border: 1px solid rgba(195, 230, 255, .18);
+      box-shadow: none;
+      backdrop-filter: none;
+    }
+    .meditation-icon {
+      width: 50%;
+      height: 50%;
+      fill: none;
+      stroke: rgba(199, 233, 251, .86);
+      stroke-width: 4.4;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      filter: none;
+    }
+    .meditation-icon .head { stroke-width: 4.9; }
+    .meditation-icon .torso,
+    .meditation-icon .left-arm,
+    .meditation-icon .right-arm,
+    .meditation-icon .left-leg,
+    .meditation-icon .right-leg,
+    .meditation-icon .base { vector-effect: non-scaling-stroke; }
+    .meditation-copy {
+      font-size: clamp(25px, 3.15vw, 42px);
+      font-weight: 300;
+      line-height: 1.34;
+      letter-spacing: .15px;
+      color: rgba(255,255,255,.94);
+      text-shadow: 0 8px 32px rgba(0,0,0,.64);
+    }
+    .mantra-text {
+      margin-top: clamp(6px, 1.1vh, 12px);
+      color: #a8d4ff;
+      font-size: 1.16em;
+      font-weight: 600;
+      text-shadow: 0 0 22px rgba(145, 205, 255, .34), 0 8px 30px rgba(0,0,0,.58);
+    }
+    .narrator-toggle {
+      min-width: 170px;
+      height: 46px;
+      padding: 0 24px;
+      border-radius: 999px;
+      border: 1px solid rgba(190, 225, 255, .28);
+      background: rgba(27, 49, 66, .42);
+      color: rgba(255,255,255,.92);
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      cursor: pointer;
+      backdrop-filter: blur(14px);
+      box-shadow: 0 14px 34px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.08);
+      transition: transform .16s ease, background .2s ease, opacity .2s ease;
+    }
+    .narrator-toggle:hover { background: rgba(52, 76, 95, .50); }
+    .narrator-toggle:active { transform: scale(.96); }
+    .narrator-toggle.off { opacity: .54; }
+    @media (max-height: 720px) {
+      #meditation { padding-top: 78px; padding-bottom: 18px; }
+      .meditation-center { gap: 14px; }
+      .meditation-copy { font-size: clamp(22px, 3vw, 34px); line-height: 1.24; }
+      .meditation-icon-glow { width: 130px; height: 130px; }
+      .narrator-toggle { height: 42px; }
+    }
+    @media (max-width: 640px) {
+      #meditation { padding: 86px 18px 24px; }
+      .meditation-copy { font-size: clamp(23px, 7vw, 34px); }
+      .meditation-icon-glow { width: clamp(116px, 34vw, 150px); height: clamp(116px, 34vw, 150px); }
+    }
+
+    #breathing {
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      padding: clamp(98px, 11vh, 132px) 24px clamp(36px, 6vh, 70px);
+      background:
+        linear-gradient(180deg, rgba(2, 8, 18, .015), rgba(2, 8, 18, .07) 54%, rgba(2, 8, 18, .18) 100%),
+        url('breathing_premium_natural_background.png') center / cover no-repeat,
+        linear-gradient(180deg, #05162c 0%, #0a274a 48%, #06182e 70%, #02070d 100%);
+    }
+    #breathing::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: .22;
+      background: radial-gradient(circle at 50% 44%, rgba(120, 190, 255, .16), transparent 32%);
+    }
+    .breathing-scene-content {
+      position: relative;
+      z-index: 2;
+      width: min(760px, 94vw);
+      min-height: 0;
+      display: grid;
+      grid-template-rows: auto auto auto;
+      justify-items: center;
+      align-content: center;
+      gap: clamp(26px, 4.2vh, 46px);
+      text-align: center;
+      transform: translateY(clamp(8px, 2vh, 24px));
+    }
+    .breath-ball-wrap {
+      width: clamp(260px, 25vw, 380px);
+      height: clamp(260px, 25vw, 380px);
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: transparent !important;
+      box-shadow: none !important;
+      filter: none !important;
+    }
+    .breath-ball {
+      width: 68%;
+      height: 68%;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 33% 27%, rgba(255,255,255,.98) 0%, rgba(220,244,255,.96) 14%, rgba(149,207,255,.90) 42%, rgba(70,134,205,.79) 72%, rgba(37,78,138,.83) 100%);
+      box-shadow:
+        0 0 30px rgba(213, 244, 255, .84),
+        0 0 78px rgba(138, 210, 255, .54),
+        0 0 128px rgba(82, 156, 232, .24),
+        inset 0 0 32px rgba(255,255,255,.38),
+        inset -18px -24px 42px rgba(16, 50, 95, .25);
+      animation: breathe 8s ease-in-out infinite;
+      transform-origin: center;
+    }
+    .breath-ball::before,
+    .breath-ball::after,
+    .breath-ball-wrap::before,
+    .breath-ball-wrap::after {
+      content: none !important;
+      display: none !important;
+    }
+    @keyframes breathe {
+      0%, 100% { transform: scale(.82); }
+      50% { transform: scale(1.10); }
+    }
+    .breath-label {
+      position: static;
+      transform: none;
+      letter-spacing: .2px;
+      font-size: clamp(34px, 3.7vw, 54px);
+      line-height: 1.1;
+      font-weight: 300;
+      color: rgba(255,255,255,.94);
+      text-shadow: 0 8px 30px rgba(0,0,0,.55), 0 0 18px rgba(150, 210, 255, .16);
+      text-transform: none;
+      pointer-events: none;
+    }
+    .breathing-narrator-toggle {
+      min-width: 172px;
+      height: 46px;
+      padding: 0 24px;
+      border-radius: 999px;
+      border: 1px solid rgba(190, 225, 255, .24);
+      background: rgba(20, 42, 64, .30);
+      color: rgba(255,255,255,.86);
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      cursor: pointer;
+      backdrop-filter: blur(14px);
+      box-shadow: 0 14px 34px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,.07);
+      transition: transform .16s ease, background .2s ease, opacity .2s ease;
+    }
+    .breathing-narrator-toggle:hover { background: rgba(52, 78, 102, .42); }
+    .breathing-narrator-toggle:active { transform: scale(.96); }
+    .breathing-narrator-toggle.off { opacity: .50; }
+    @media (max-height: 720px) {
+      #breathing { padding-top: 78px; padding-bottom: 20px; }
+      .breathing-scene-content { gap: 17px; }
+      .breath-ball-wrap { width: 210px; height: 210px; }
+      .breath-label {
+      position: static;
+      transform: none;
+      letter-spacing: .2px;
+      font-size: clamp(34px, 3.7vw, 54px);
+      line-height: 1.1;
+      font-weight: 300;
+      color: rgba(255,255,255,.94);
+      text-shadow: 0 8px 30px rgba(0,0,0,.55), 0 0 18px rgba(150, 210, 255, .16);
+      text-transform: none;
+      pointer-events: none;
+    }
+      .breathing-narrator-toggle { height: 42px; }
+    }
+    @media (max-width: 640px) {
+      #breathing { padding: 86px 18px 24px; }
+      .breath-ball-wrap { width: clamp(210px, 58vw, 290px); height: clamp(210px, 58vw, 290px); }
+      .breath-label {
+      position: static;
+      transform: none;
+      letter-spacing: .2px;
+      font-size: clamp(34px, 3.7vw, 54px);
+      line-height: 1.1;
+      font-weight: 300;
+      color: rgba(255,255,255,.94);
+      text-shadow: 0 8px 30px rgba(0,0,0,.55), 0 0 18px rgba(150, 210, 255, .16);
+      text-transform: none;
+      pointer-events: none;
+    }
+    }
+
+    #dotmove {
+      background:
+        linear-gradient(180deg, rgba(2, 8, 18, .01), rgba(2, 8, 18, .045) 52%, rgba(2, 8, 18, .14) 100%),
+        url('dotmove_deep_blue_background.png') center / cover no-repeat,
+        linear-gradient(180deg, #06172d, #02070d);
+    }
+    .dot-mode-panel {
+      position: absolute;
+      top: clamp(76px, 8.5vh, 108px);
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 4;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      text-align: center;
+      pointer-events: auto;
+    }
+    .dot-title {
+      font-size: clamp(20px, 2.2vw, 30px);
+      letter-spacing: 8px;
+      font-weight: 400;
+      color: rgba(255,255,255,.94);
+      text-shadow: 0 8px 26px rgba(0,0,0,.45);
+    }
+    .dot-subtitle {
+      font-size: clamp(13px, 1.2vw, 17px);
+      letter-spacing: .4px;
+      color: rgba(255,255,255,.62);
+      text-shadow: 0 8px 24px rgba(0,0,0,.45);
+    }
+    .dot-count-toggle {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      width: min(330px, 72vw);
+      height: 48px;
+      padding: 4px;
+      border-radius: 999px;
+      border: 1px solid rgba(180, 220, 255, .24);
+      background: rgba(9, 24, 42, .42);
+      backdrop-filter: blur(14px);
+      box-shadow: 0 14px 34px rgba(0,0,0,.26), inset 0 1px 0 rgba(255,255,255,.08);
+    }
+    .dot-count-btn {
+      border: 0;
+      border-radius: 999px;
+      background: transparent;
+      color: rgba(255,255,255,.72);
+      cursor: pointer;
+      font-size: 14px;
+      letter-spacing: .4px;
+      transition: background .18s ease, color .18s ease, box-shadow .18s ease;
+    }
+    .dot-count-btn.active {
+      color: rgba(232, 248, 255, .98);
+      background: rgba(50, 124, 225, .28);
+      box-shadow: inset 0 0 0 1px rgba(110, 190, 255, .36), 0 0 22px rgba(80, 170, 255, .20);
+    }
+    .dot-help { display: none; }
+    #dotArea {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      z-index: 2;
+      touch-action: none;
+    }
+    .dot-orb, #dot {
+      position: absolute;
+      width: clamp(78px, 7vw, 114px);
+      height: clamp(78px, 7vw, 114px);
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 34% 28%, rgba(255,255,255,.98) 0%, rgba(220,244,255,.96) 16%, rgba(128,199,255,.90) 46%, rgba(46,133,225,.82) 76%, rgba(25,76,154,.86) 100%);
+      box-shadow:
+        0 0 24px rgba(210, 242, 255, .76),
+        0 0 64px rgba(126, 205, 255, .50),
+        0 0 112px rgba(75, 150, 236, .24),
+        inset 0 0 26px rgba(255,255,255,.36),
+        inset -16px -22px 38px rgba(12, 52, 108, .28);
+      cursor: pointer;
+      touch-action: none;
+      transition: transform .16s ease, box-shadow .16s ease, opacity .16s ease;
+    }
+    .dot-orb.holding, #dot.holding {
+      transform: scale(1.10);
+      box-shadow:
+        0 0 34px rgba(225, 248, 255, .88),
+        0 0 86px rgba(144, 220, 255, .62),
+        0 0 140px rgba(86, 165, 245, .30),
+        inset 0 0 30px rgba(255,255,255,.42),
+        inset -16px -22px 38px rgba(12, 52, 108, .24);
+    }
+    .dot-status {
+      position: absolute;
+      bottom: clamp(32px, 5vh, 58px);
+      width: 100%;
+      text-align: center;
+      font-size: clamp(15px, 1.25vw, 20px);
+      letter-spacing: 1.2px;
+      color: rgba(255,255,255,.72);
+      text-shadow: 0 8px 24px rgba(0,0,0,.55);
+      z-index: 3;
+      pointer-events: none;
+    }
+
+    .complete { position: absolute; inset: 0; z-index: 30; display: none; align-items: center; justify-content: center; flex-direction: column; gap: 14px; background: rgba(0,0,0,.72); backdrop-filter: blur(10px); text-align: center; }
+    .complete.show { display: flex; }
+    .complete h2 { font-weight: 260; letter-spacing: 6px; font-size: 30px; }
+    .complete p { letter-spacing: 3px; opacity: .65; font-size: 12px; }
+
+  
+    /* DOT MOVE count selector: compact bottom-right control */
+    #dotmove .dot-mode-panel {
+      top: auto !important;
+      left: auto !important;
+      right: clamp(18px, 4vw, 34px) !important;
+      bottom: clamp(86px, 11vh, 118px) !important;
+      transform: none !important;
+      align-items: flex-end !important;
+      gap: 8px !important;
+      z-index: 20 !important;
+      pointer-events: auto !important;
+    }
+    #dotmove .dot-title,
+    #dotmove .dot-subtitle {
+      display: none !important;
+    }
+    #dotmove .dot-count-toggle {
+      width: 168px !important;
+      height: 42px !important;
+      padding: 4px !important;
+      border-radius: 999px !important;
+      background: rgba(6, 19, 34, .58) !important;
+      border: 1px solid rgba(180, 220, 255, .26) !important;
+      backdrop-filter: blur(14px) !important;
+      box-shadow: 0 14px 32px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.08) !important;
+    }
+    #dotmove .dot-count-btn {
+      font-size: 12px !important;
+      letter-spacing: .2px !important;
+      pointer-events: auto !important;
+      user-select: none !important;
+    }
+    #dotmove .dot-count-btn.active {
+      background: rgba(64, 148, 255, .34) !important;
+      box-shadow: inset 0 0 0 1px rgba(125, 202, 255, .42), 0 0 20px rgba(85, 170, 255, .22) !important;
+    }
+    @media (min-width: 760px) {
+      #dotmove .dot-mode-panel {
+        right: 22px !important;
+        bottom: 86px !important;
+      }
+      #dotmove .dot-count-toggle {
+        width: 154px !important;
+        height: 40px !important;
+      }
+    }
+
+  
+    /* Mobile-first layout */
+    .screen {
+      border-radius: 0;
+    }
+
+    @media (min-width: 760px) {
+      body {
+        background: #02070d;
+      }
+
+      #home .home-inner,
+      .meditation-center,
+      .breathing-scene-content {
+        max-width: 430px;
+      }
+
+      .mode-picker {
+        width: min(405px, 86vw);
+      }
+
+      #dotmove .dot-mode-panel {
+        right: 34px !important;
+        bottom: 34px !important;
+      }
+
+      #dotmove .dot-count-toggle {
+        width: 176px !important;
+        height: 44px !important;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .global-sound {
+        width: 52px;
+        height: 52px;
+        top: 18px;
+        right: 18px;
+      }
+
+      .global-sound svg {
+        width: 26px;
+        height: 26px;
+      }
+
+      .topbar {
+        top: 18px;
+      }
+
+      #dotmove .dot-mode-panel {
+        right: 16px !important;
+        bottom: 76px !important;
+      }
+
+      #dotmove .dot-count-toggle {
+        width: 150px !important;
+        height: 40px !important;
+      }
+
+      #dotmove .dot-count-btn {
+        font-size: 11px !important;
+      }
+    }
+
+  
+    @media (max-width: 520px) {
+      #dotmove .dot-status {
+        bottom: 28px !important;
+        font-size: 11px !important;
+        padding: 0 150px 0 18px;
+        text-align: left;
+      }
+    }
+  
+    /* Ensure DOT MOVE dot-count buttons are clickable */
+    #dotmove .dot-mode-panel,
+    #dotmove .dot-count-toggle,
+    #dotmove .dot-count-btn {
+      pointer-events: auto !important;
+    }
+
+    #dotmove .dot-mode-panel {
+      z-index: 60 !important;
+    }
+
+    #dotmove #dotArea {
+      z-index: 2 !important;
+    }
+
+    #dotmove .dot-count-btn {
+      position: relative;
+      z-index: 61 !important;
+      touch-action: manipulation;
+    }
+
+  
+    .mantra-manager-btn {
+      position: fixed;
+      top: clamp(88px, 12vh, 126px);
+      left: clamp(18px, 4vw, 38px);
+      right: auto;
+      z-index: 2500;
+      height: 42px;
+      padding: 0 18px;
+      border-radius: 999px;
+      border: 1px solid rgba(190, 225, 255, .26);
+      background: rgba(8, 22, 36, .36);
+      color: rgba(255,255,255,.88);
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 2px;
+      cursor: pointer;
+      backdrop-filter: blur(14px);
+      box-shadow: 0 14px 32px rgba(0,0,0,.26), inset 0 1px 0 rgba(255,255,255,.08);
+    }
+    .mantra-manager-btn:active { transform: scale(.96); }
+
+    .mantra-manager-panel {
+      position: fixed;
+      inset: 0;
+      z-index: 5000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 22px;
+      background: rgba(0, 6, 12, .66);
+      backdrop-filter: blur(16px);
+    }
+    .mantra-manager-panel.show { display: flex; }
+
+    .mantra-manager-card {
+      width: min(520px, 94vw);
+      max-height: min(760px, 88vh);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border-radius: 28px;
+      border: 1px solid rgba(190, 225, 255, .24);
+      background: linear-gradient(180deg, rgba(12, 30, 48, .88), rgba(5, 15, 26, .92));
+      box-shadow: 0 30px 90px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.09);
+      color: white;
+    }
+    .mantra-manager-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 24px 24px 18px;
+      border-bottom: 1px solid rgba(255,255,255,.10);
+    }
+    .mantra-manager-head h2 {
+      font-size: 22px;
+      letter-spacing: 5px;
+      font-weight: 400;
+      margin-bottom: 8px;
+    }
+    .mantra-manager-head p {
+      color: rgba(255,255,255,.62);
+      font-size: 13px;
+      letter-spacing: .3px;
+    }
+    .mantra-close {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(255,255,255,.06);
+      color: rgba(255,255,255,.92);
+      font-size: 28px;
+      line-height: 1;
+      cursor: pointer;
+    }
+    .mantra-list {
+      overflow: auto;
+      padding: 14px 18px;
+      display: grid;
+      gap: 8px;
+    }
+    .mantra-item {
+      min-height: 44px;
+      display: grid;
+      grid-template-columns: 24px 1fr auto;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: 16px;
+      background: rgba(255,255,255,.055);
+      border: 1px solid rgba(255,255,255,.08);
+    }
+    .mantra-item input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      accent-color: #79c8ff;
+      cursor: pointer;
+    }
+    .mantra-item span {
+      font-size: 15px;
+      color: rgba(255,255,255,.90);
+    }
+    .mantra-delete {
+      border: 0;
+      border-radius: 999px;
+      padding: 7px 11px;
+      background: rgba(255,255,255,.08);
+      color: rgba(255,255,255,.68);
+      cursor: pointer;
+      font-size: 11px;
+      letter-spacing: 1px;
+    }
+    .mantra-delete:hover { background: rgba(255,255,255,.14); color: white; }
+    .mantra-add-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      padding: 16px 18px 20px;
+      border-top: 1px solid rgba(255,255,255,.10);
+    }
+    .mantra-input {
+      height: 46px;
+      border: 1px solid rgba(190, 225, 255, .20);
+      background: rgba(0,0,0,.18);
+      color: white;
+      border-radius: 999px;
+      padding: 0 16px;
+      outline: none;
+      font-size: 15px;
+      -webkit-user-select: text;
+      user-select: text;
+    }
+    .mantra-add-btn {
+      height: 46px;
+      padding: 0 18px;
+      border-radius: 999px;
+      border: 1px solid rgba(120, 200, 255, .32);
+      background: rgba(68, 148, 235, .28);
+      color: white;
+      letter-spacing: 2px;
+      cursor: pointer;
+    }
+    @media (max-width: 520px) {
+      .mantra-manager-btn {
+        top: 82px;
+        left: 18px;
+        right: auto;
+        height: 38px;
+        padding: 0 14px;
+        font-size: 11px;
+      }
+      .mantra-manager-card {
+        border-radius: 24px;
+        max-height: 86vh;
+      }
+      .mantra-manager-head {
+        padding: 20px 18px 15px;
+      }
+      .mantra-add-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+  
+    .mantra-choice {
+      display: grid;
+      grid-template-columns: 38px 38px 1fr auto;
+      align-items: center;
+      gap: 9px;
+      padding: 10px 12px;
+      border-radius: 16px;
+      background: rgba(255,255,255,.055);
+      border: 1px solid rgba(255,255,255,.08);
+    }
+    .mantra-choice.hidden-mantra {
+      opacity: .58;
+    }
+    .mantra-choice span {
+      font-size: 15px;
+      color: rgba(255,255,255,.90);
+    }
+    .mantra-choice-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      color: rgba(255,255,255,.68);
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 1;
+      display: grid;
+      place-items: center;
+      transition: transform .14s ease, background .18s ease, color .18s ease, border-color .18s ease;
+    }
+    .mantra-choice-btn:active { transform: scale(.94); }
+    .mantra-choice-btn.like.active {
+      background: rgba(75, 190, 130, .24);
+      border-color: rgba(110, 235, 170, .42);
+      color: #b8ffd6;
+      box-shadow: 0 0 18px rgba(70, 220, 140, .16);
+    }
+    .mantra-choice-btn.hide.active {
+      background: rgba(245, 82, 92, .22);
+      border-color: rgba(255, 130, 140, .42);
+      color: #ffd0d4;
+      box-shadow: 0 0 18px rgba(245, 82, 92, .14);
+    }
+
+  
+    /* Fix MANTRAS button clickability */
+    #home #mantraManagerBtn,
+    #mantraManagerBtn {
+      pointer-events: auto !important;
+      z-index: 2500 !important;
+    }
+    #home .home-inner {
+      pointer-events: auto;
+    }
+    #mantraManagerPanel {
+      pointer-events: auto !important;
+    }
+    #mantraManagerPanel.show {
+      display: flex !important;
+    }
+
+  
+    /* FINAL MANTRAS BUTTON FIX */
+    #mantraManagerBtn.mantra-manager-btn {
+      position: fixed !important;
+      top: clamp(88px, 12vh, 126px) !important;
+      left: clamp(18px, 4vw, 38px) !important;
+      right: auto !important;
+      z-index: 2147483000 !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      height: 42px !important;
+      padding: 0 18px !important;
+      border-radius: 999px !important;
+      border: 1px solid rgba(190, 225, 255, .32) !important;
+      background: rgba(8, 22, 36, .62) !important;
+      color: rgba(255,255,255,.95) !important;
+      font-size: 12px !important;
+      font-weight: 600 !important;
+      letter-spacing: 2px !important;
+      cursor: pointer !important;
+      pointer-events: auto !important;
+      user-select: none !important;
+      -webkit-user-select: none !important;
+      backdrop-filter: blur(14px) !important;
+      box-shadow: 0 14px 32px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.10) !important;
+    }
+    #mantraManagerPanel.mantra-manager-panel {
+      z-index: 2147483001 !important;
+      pointer-events: auto !important;
+    }
+    #mantraManagerPanel.mantra-manager-panel.show {
+      display: flex !important;
+    }
+    @media (max-width: 520px) {
+      #mantraManagerBtn.mantra-manager-btn {
+        top: 82px !important;
+        left: 18px !important;
+        height: 38px !important;
+        padding: 0 14px !important;
+        font-size: 11px !important;
+      }
+    }
+
+  
+    /* Show MANTRAS only on the Home screen */
+    #mantraManagerBtn {
+      opacity: 0 !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
+      transition: opacity .18s ease, visibility .18s ease;
+    }
+    body.home-active #mantraManagerBtn {
+      opacity: 1 !important;
+      visibility: visible !important;
+      pointer-events: auto !important;
+    }
+
+  
+    /* Final stability fixes */
+    #mantraManagerBtn.mantra-manager-btn {
+      position: fixed !important;
+      top: clamp(88px, 12vh, 126px) !important;
+      left: clamp(18px, 4vw, 38px) !important;
+      right: auto !important;
+      z-index: 2147483000 !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      height: 42px !important;
+      padding: 0 18px !important;
+      border-radius: 999px !important;
+      border: 1px solid rgba(190, 225, 255, .32) !important;
+      background: rgba(8, 22, 36, .62) !important;
+      color: rgba(255,255,255,.95) !important;
+      font-size: 12px !important;
+      font-weight: 600 !important;
+      letter-spacing: 2px !important;
+      cursor: pointer !important;
+      user-select: none !important;
+      -webkit-user-select: none !important;
+      backdrop-filter: blur(14px) !important;
+      box-shadow: 0 14px 32px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.10) !important;
+      opacity: 0 !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
+    }
+    body.home-active #mantraManagerBtn.mantra-manager-btn {
+      opacity: 1 !important;
+      visibility: visible !important;
+      pointer-events: auto !important;
+    }
+    #globalSoundToggle.global-sound {
+      z-index: 2147482000 !important;
+      pointer-events: auto !important;
+    }
+    #mantraManagerPanel.mantra-manager-panel {
+      z-index: 2147483001 !important;
+      pointer-events: auto !important;
+    }
+    #mantraManagerPanel.mantra-manager-panel.show {
+      display: flex !important;
+    }
+    #newMantraInput {
+      -webkit-user-select: text !important;
+      user-select: text !important;
+    }
+    @media (max-width: 520px) {
+      #mantraManagerBtn.mantra-manager-btn {
+        top: 82px !important;
+        left: 18px !important;
+        height: 38px !important;
+        padding: 0 14px !important;
+        font-size: 11px !important;
+      }
+    }
+
+  
+    /* Settings menu */
+    #globalSoundToggle.global-sound,
+    #mantraManagerBtn.mantra-manager-btn {
+      display: none !important;
+    }
+
+    #settingsToggle.settings-toggle {
+      position: fixed;
+      top: clamp(22px, 4vh, 38px);
+      right: clamp(18px, 4vw, 38px);
+      z-index: 2147483000;
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      border: 1px solid rgba(190, 225, 255, .28);
+      background: rgba(8, 22, 36, .52);
+      color: rgba(255,255,255,.94);
+      font-size: 24px;
+      cursor: pointer;
+      backdrop-filter: blur(14px);
+      box-shadow: 0 14px 32px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.10);
+      display: grid;
+      place-items: center;
+      pointer-events: auto;
+    }
+
+    .settings-panel {
+      position: fixed;
+      inset: 0;
+      z-index: 2147483001;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 22px;
+      background: rgba(0, 6, 12, .66);
+      backdrop-filter: blur(16px);
+      pointer-events: auto;
+    }
+    .settings-panel.show { display: flex; }
+
+    .settings-card {
+      width: min(430px, 94vw);
+      border-radius: 28px;
+      overflow: hidden;
+      border: 1px solid rgba(190, 225, 255, .24);
+      background: linear-gradient(180deg, rgba(12, 30, 48, .92), rgba(5, 15, 26, .95));
+      box-shadow: 0 30px 90px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.09);
+      color: white;
+    }
+
+    .settings-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 24px 24px 18px;
+      border-bottom: 1px solid rgba(255,255,255,.10);
+    }
+    .settings-head h2 {
+      font-size: 22px;
+      letter-spacing: 5px;
+      font-weight: 400;
+      margin-bottom: 8px;
+    }
+    .settings-head p {
+      color: rgba(255,255,255,.62);
+      font-size: 13px;
+      letter-spacing: .3px;
+    }
+    .settings-close {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(255,255,255,.06);
+      color: rgba(255,255,255,.92);
+      font-size: 28px;
+      line-height: 1;
+      cursor: pointer;
+    }
+    .settings-actions {
+      display: grid;
+      gap: 10px;
+      padding: 18px;
+    }
+    .settings-action {
+      min-height: 58px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.055);
+      color: white;
+      padding: 0 16px;
+      cursor: pointer;
+      text-align: left;
+    }
+    .settings-action span {
+      font-size: 15px;
+      color: rgba(255,255,255,.90);
+    }
+    .settings-action strong {
+      min-width: 58px;
+      height: 32px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      background: rgba(70, 180, 130, .22);
+      color: #b8ffd6;
+      font-size: 11px;
+      letter-spacing: 1.4px;
+    }
+    .settings-action.off strong {
+      background: rgba(255,255,255,.08);
+      color: rgba(255,255,255,.58);
+    }
+    @media (max-width: 520px) {
+      #settingsToggle.settings-toggle {
+        top: 18px;
+        right: 18px;
+        width: 52px;
+        height: 52px;
+      }
+      .settings-card { border-radius: 24px; }
+      .settings-head { padding: 20px 18px 15px; }
+    }
+
+  
+    /* FINAL SETTINGS BUTTON FIX + NEW DESIGN */
+    #settingsToggle.settings-toggle {
+      position: fixed !important;
+      top: clamp(20px, 3.6vh, 34px) !important;
+      right: clamp(18px, 4vw, 34px) !important;
+      z-index: 2147483300 !important;
+      width: 58px !important;
+      height: 58px !important;
+      display: grid !important;
+      place-items: center !important;
+      border-radius: 22px !important;
+      border: 1px solid rgba(190, 225, 255, .28) !important;
+      background:
+        linear-gradient(180deg, rgba(29, 62, 89, .62), rgba(8, 22, 36, .62)) !important;
+      color: rgba(255,255,255,.96) !important;
+      cursor: pointer !important;
+      pointer-events: auto !important;
+      user-select: none !important;
+      -webkit-user-select: none !important;
+      backdrop-filter: blur(16px) !important;
+      box-shadow:
+        0 16px 38px rgba(0,0,0,.36),
+        inset 0 1px 0 rgba(255,255,255,.12),
+        0 0 22px rgba(105, 185, 255, .14) !important;
+      transition: transform .18s ease, background .18s ease, box-shadow .18s ease !important;
+    }
+    #settingsToggle.settings-toggle:hover {
+      transform: translateY(-1px) scale(1.03) !important;
+      background:
+        linear-gradient(180deg, rgba(42, 80, 110, .72), rgba(12, 30, 48, .68)) !important;
+      box-shadow:
+        0 18px 42px rgba(0,0,0,.40),
+        inset 0 1px 0 rgba(255,255,255,.14),
+        0 0 28px rgba(105, 185, 255, .18) !important;
+    }
+    #settingsToggle.settings-toggle:active {
+      transform: scale(.95) !important;
+    }
+    .settings-toggle-icon {
+      width: 29px;
+      height: 29px;
+      display: grid;
+      place-items: center;
+    }
+    .settings-toggle-icon svg {
+      width: 29px;
+      height: 29px;
+      fill: none;
+      stroke: rgba(240, 250, 255, .96);
+      stroke-width: 1.55;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      filter: drop-shadow(0 0 7px rgba(130, 205, 255, .22));
+    }
+
+    #settingsPanel.settings-panel {
+      z-index: 2147483400 !important;
+      pointer-events: auto !important;
+    }
+    #settingsPanel.settings-panel.show {
+      display: flex !important;
+    }
+
+    @media (max-width: 520px) {
+      #settingsToggle.settings-toggle {
+        top: 17px !important;
+        right: 17px !important;
+        width: 54px !important;
+        height: 54px !important;
+        border-radius: 20px !important;
+      }
+      .settings-toggle-icon,
+      .settings-toggle-icon svg {
+        width: 27px !important;
+        height: 27px !important;
+      }
+    }
+
+  
+    /* FINAL SETTINGS + AUDIO STABILITY */
+    #globalSoundToggle.global-sound,
+    #mantraManagerBtn.mantra-manager-btn {
+      display: none !important;
+    }
+
+    #settingsToggle.settings-toggle {
+      position: fixed !important;
+      top: clamp(20px, 3.6vh, 34px) !important;
+      right: clamp(18px, 4vw, 34px) !important;
+      z-index: 2147483300 !important;
+      width: 58px !important;
+      height: 58px !important;
+      display: grid !important;
+      place-items: center !important;
+      border-radius: 22px !important;
+      border: 1px solid rgba(190, 225, 255, .28) !important;
+      background: linear-gradient(180deg, rgba(29, 62, 89, .62), rgba(8, 22, 36, .62)) !important;
+      color: rgba(255,255,255,.96) !important;
+      cursor: pointer !important;
+      pointer-events: auto !important;
+      user-select: none !important;
+      -webkit-user-select: none !important;
+      backdrop-filter: blur(16px) !important;
+      box-shadow:
+        0 16px 38px rgba(0,0,0,.36),
+        inset 0 1px 0 rgba(255,255,255,.12),
+        0 0 22px rgba(105, 185, 255, .14) !important;
+      transition: transform .18s ease, background .18s ease, box-shadow .18s ease !important;
+    }
+    #settingsToggle.settings-toggle:hover {
+      transform: translateY(-1px) scale(1.03) !important;
+      background: linear-gradient(180deg, rgba(42, 80, 110, .72), rgba(12, 30, 48, .68)) !important;
+      box-shadow:
+        0 18px 42px rgba(0,0,0,.40),
+        inset 0 1px 0 rgba(255,255,255,.14),
+        0 0 28px rgba(105, 185, 255, .18) !important;
+    }
+    #settingsToggle.settings-toggle:active {
+      transform: scale(.95) !important;
+    }
+    .settings-toggle-icon {
+      width: 29px;
+      height: 29px;
+      display: grid;
+      place-items: center;
+    }
+    .settings-toggle-icon svg {
+      width: 29px;
+      height: 29px;
+      fill: none;
+      stroke: rgba(240, 250, 255, .96);
+      stroke-width: 1.55;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      filter: drop-shadow(0 0 7px rgba(130, 205, 255, .22));
+    }
+
+    #settingsPanel.settings-panel {
+      z-index: 2147483400 !important;
+      pointer-events: auto !important;
+    }
+    #settingsPanel.settings-panel.show {
+      display: flex !important;
+    }
+
+    @media (max-width: 520px) {
+      #settingsToggle.settings-toggle {
+        top: 17px !important;
+        right: 17px !important;
+        width: 54px !important;
+        height: 54px !important;
+        border-radius: 20px !important;
+      }
+      .settings-toggle-icon,
+      .settings-toggle-icon svg {
+        width: 27px !important;
+        height: 27px !important;
+      }
+    }
+
+  
+    .audio-status {
+      position: fixed;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%);
+      z-index: 2147483500;
+      display: none;
+      max-width: min(360px, 86vw);
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(190, 225, 255, .24);
+      background: rgba(8, 22, 36, .72);
+      color: rgba(255,255,255,.88);
+      font-size: 12px;
+      letter-spacing: .3px;
+      backdrop-filter: blur(14px);
+      box-shadow: 0 12px 30px rgba(0,0,0,.35);
+      pointer-events: auto;
+      cursor: pointer;
+    }
+    .audio-status.show { display: block; }
+
+  
+    .settings-custom-music {
+      display: grid;
+      gap: 10px;
+      margin-top: 4px;
+      padding: 14px;
+      border-radius: 20px;
+      border: 1px solid rgba(190, 225, 255, .16);
+      background: rgba(255,255,255,.045);
+    }
+    .settings-custom-title {
+      font-size: 14px;
+      letter-spacing: 2.2px;
+      color: rgba(255,255,255,.92);
+      text-transform: uppercase;
+    }
+    .settings-custom-music p {
+      margin: 0;
+      color: rgba(255,255,255,.58);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .custom-music-file {
+      min-height: 46px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 14px;
+      border-radius: 999px;
+      border: 1px dashed rgba(150, 210, 255, .34);
+      background: rgba(0,0,0,.16);
+      color: rgba(255,255,255,.84);
+      cursor: pointer;
+      text-align: center;
+      font-size: 13px;
+    }
+    .custom-music-file input {
+      display: none;
+    }
+    .custom-music-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+    }
+    .custom-music-select {
+      min-width: 0;
+      height: 44px;
+      border-radius: 999px;
+      border: 1px solid rgba(190, 225, 255, .20);
+      background: rgba(0,0,0,.20);
+      color: white;
+      padding: 0 14px;
+      outline: none;
+      font-size: 13px;
+    }
+    .custom-music-select option {
+      color: #04101d;
+    }
+    .custom-music-apply,
+    .custom-music-reset {
+      height: 44px;
+      border-radius: 999px;
+      border: 1px solid rgba(120, 200, 255, .32);
+      background: rgba(68, 148, 235, .28);
+      color: white;
+      letter-spacing: 1.4px;
+      cursor: pointer;
+      padding: 0 14px;
+      font-size: 12px;
+    }
+    .custom-music-reset {
+      width: 100%;
+      border-color: rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      color: rgba(255,255,255,.70);
+    }
+    .custom-music-status {
+      min-height: 16px;
+      color: rgba(185, 232, 255, .86);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+    @media (max-width: 520px) {
+      .custom-music-row {
+        grid-template-columns: 1fr;
+      }
+      .settings-custom-music {
+        padding: 12px;
+      }
+    }
+
+  
+    .settings-background-picker {
+      display: grid;
+      gap: 10px;
+      margin-top: 4px;
+      padding: 14px;
+      border-radius: 20px;
+      border: 1px solid rgba(190, 225, 255, .16);
+      background: rgba(255,255,255,.045);
+    }
+    .background-picker-row {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+    .background-choice-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      max-height: 260px;
+      overflow: auto;
+      padding-right: 2px;
+    }
+    .background-choice {
+      position: relative;
+      min-height: 84px;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.18);
+      cursor: pointer;
+      color: white;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+    }
+    .background-choice.active {
+      border-color: rgba(135, 215, 255, .80);
+      box-shadow: 0 0 0 2px rgba(80, 180, 255, .22), 0 0 20px rgba(80, 180, 255, .18);
+    }
+    .background-choice img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scale(1.02);
+    }
+    .background-choice::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(0,0,0,.05), rgba(0,0,0,.46));
+    }
+    .background-choice span {
+      position: absolute;
+      z-index: 1;
+      left: 10px;
+      right: 10px;
+      bottom: 9px;
+      font-size: 11px;
+      letter-spacing: .8px;
+      text-shadow: 0 2px 10px rgba(0,0,0,.75);
+      text-transform: uppercase;
+    }
+    @media (max-width: 520px) {
+      .background-choice-grid {
+        grid-template-columns: 1fr;
+        max-height: 230px;
+      }
+    }
+
+  
+    /* Scrollable Settings panel */
+    #settingsPanel.settings-panel {
+      align-items: flex-start !important;
+      justify-content: center !important;
+      overflow-y: auto !important;
+      overflow-x: hidden !important;
+      -webkit-overflow-scrolling: touch !important;
+      overscroll-behavior: contain !important;
+      padding-top: max(22px, env(safe-area-inset-top)) !important;
+      padding-bottom: max(22px, env(safe-area-inset-bottom)) !important;
+    }
+
+    #settingsPanel .settings-card {
+      max-height: none !important;
+      margin: auto 0 !important;
+      overflow: visible !important;
+    }
+
+    #settingsPanel .settings-actions {
+      overflow: visible !important;
+      max-height: none !important;
+    }
+
+    #settingsPanel .background-choice-grid {
+      max-height: 300px !important;
+      overflow-y: auto !important;
+      -webkit-overflow-scrolling: touch !important;
+      overscroll-behavior: contain !important;
+    }
+
+    @media (max-height: 760px) {
+      #settingsPanel.settings-panel {
+        align-items: flex-start !important;
+      }
+      #settingsPanel .settings-card {
+        margin-top: 0 !important;
+        margin-bottom: 0 !important;
+      }
+    }
+
+    @media (max-width: 520px) {
+      #settingsPanel.settings-panel {
+        padding: 14px !important;
+        padding-top: max(14px, env(safe-area-inset-top)) !important;
+        padding-bottom: max(20px, env(safe-area-inset-bottom)) !important;
+      }
+
+      #settingsPanel .settings-card {
+        width: min(430px, 96vw) !important;
+      }
+
+      #settingsPanel .background-choice-grid {
+        max-height: 240px !important;
+      }
+    }
+
+  
+    .custom-background-upload {
+      display: grid;
+      gap: 10px;
+      margin-top: 2px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(255,255,255,.10);
+    }
+
+  
+    .custom-image-note {
+      margin: -2px 2px 0;
+      color: rgba(255,255,255,.54);
+      font-size: 11px;
+      line-height: 1.35;
+    }
+
+  
+    /* Final background picker click fix */
+    #backgroundChoiceGrid,
+    #backgroundChoiceGrid .background-choice {
+      pointer-events: auto !important;
+      touch-action: manipulation !important;
+    }
+    #backgroundChoiceGrid .background-choice {
+      z-index: 1;
+    }
+    #backgroundTarget,
+    #customBackgroundFile,
+    #customBackgroundTarget,
+    #applyCustomBackgroundBtn,
+    #resetBackgroundsBtn {
+      pointer-events: auto !important;
+    }
+
+  </style>
+</head>
+<body>
+  <audio id="homeAudio" src="home_screen_music.mp3" loop preload="auto"></audio>
+  <audio id="meditationAudio" src="meditation_relaxing_music.mp3" loop preload="auto"></audio>
+  <audio id="breathingAudio" src="meditation_mode_music.mp3" loop preload="auto"></audio>
+  <audio id="dotAudio" src="dot_move_music.mp3" loop preload="auto"></audio>
+  <audio id="endAudio" src="end_mode_music.mp3" preload="auto"></audio>
+
+  <button id="settingsToggle" class="settings-toggle" type="button" aria-label="Open settings" title="Settings">
+    <span class="settings-toggle-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24">
+        <path d="M12 8.4a3.6 3.6 0 1 0 0 7.2a3.6 3.6 0 0 0 0-7.2z"></path>
+        <path d="M19.4 13.5c.1-.5.1-1 .1-1.5s0-1-.1-1.5l2-1.5l-2-3.4l-2.4 1a8 8 0 0 0-2.5-1.5L14.2 2h-4.4l-.4 3.1a8 8 0 0 0-2.5 1.5l-2.4-1l-2 3.4l2 1.5c-.1.5-.1 1-.1 1.5s0 1 .1 1.5l-2 1.5l2 3.4l2.4-1a8 8 0 0 0 2.5 1.5l.4 3.1h4.4l.4-3.1a8 8 0 0 0 2.5-1.5l2.4 1l2-3.4l-2.1-1.5z"></path>
+      </svg>
+    </span>
+  </button>
+
+  <div id="settingsPanel" class="settings-panel" aria-hidden="true">
+    <div class="settings-card" role="dialog" aria-modal="true" aria-label="Settings">
+      <div class="settings-head">
+        <div>
+          <h2>SETTINGS</h2>
+          <p>Sound, mantras, and voice guide defaults</p>
+        </div>
+        <button id="closeSettings" class="settings-close" type="button" aria-label="Close settings">×</button>
+      </div>
+
+      <div class="settings-actions">
+        <button id="settingsSoundToggle" class="settings-action" type="button">
+          <span>Music & Sounds</span>
+          <strong>ON</strong>
+        </button>
+
+        <button id="settingsMantrasBtn" class="settings-action" type="button">
+          <span>Mantras</span>
+          <strong>OPEN</strong>
+        </button>
+
+        <button id="defaultMeditationNarratorToggle" class="settings-action" type="button">
+          <span>Meditation Voice Guide</span>
+          <strong>ON</strong>
+        </button>
+
+        <button id="defaultBreathingNarratorToggle" class="settings-action" type="button">
+          <span>Breathingball Voice Guide</span>
+          <strong>OFF</strong>
+        </button>
+
+        <div class="settings-custom-music">
+          <div class="settings-custom-title">Custom Music</div>
+          <p>Choose a music file and assign it to Home, Meditation, Breathingball, or DOT MOVE.</p>
+
+          <label class="custom-music-file">
+            <input id="customMusicFile" type="file" accept="audio/*" />
+            <span id="customMusicFileName">Choose audio file</span>
+          </label>
+
+          <div class="custom-music-row">
+            <select id="customMusicTarget" class="custom-music-select" aria-label="Choose music target">
+              <option value="home">Home Screen</option>
+              <option value="meditation">Meditation</option>
+              <option value="breathing">Breathingball</option>
+              <option value="dotmove">DOT MOVE</option>
+            </select>
+            <button id="applyCustomMusicBtn" class="custom-music-apply" type="button">APPLY</button>
+          </div>
+
+          <button id="resetCustomMusicBtn" class="custom-music-reset" type="button">RESET CUSTOM MUSIC</button>
+          <div id="customMusicStatus" class="custom-music-status"></div>
+        </div>
+
+
+        <div class="settings-background-picker">
+          <div class="settings-custom-title">Backgrounds</div>
+          <p>Choose a mode, then choose one of the available backgrounds.</p>
+
+          <div class="background-picker-row">
+            <select id="backgroundTarget" class="custom-music-select" aria-label="Choose background target">
+              <option value="home">Home Screen</option>
+              <option value="meditation">Meditation</option>
+              <option value="breathing">Breathingball</option>
+              <option value="dotmove">DOT MOVE</option>
+            </select>
+          </div>
+
+          <div id="backgroundChoiceGrid" class="background-choice-grid"></div>
+
+          <div class="custom-background-upload">
+            <label class="custom-music-file">
+              <input id="customBackgroundFile" type="file" accept="image/*" />
+              <span id="customBackgroundFileName">Choose your own image</span>
+            </label>
+            <p class="custom-image-note">Images are automatically enhanced for sharper, cleaner backgrounds.</p>
+
+            <div class="custom-music-row">
+              <select id="customBackgroundTarget" class="custom-music-select" aria-label="Choose image background target">
+                <option value="home">Home Screen</option>
+                <option value="meditation">Meditation</option>
+                <option value="breathing">Breathingball</option>
+                <option value="dotmove">DOT MOVE</option>
+              </select>
+              <button id="applyCustomBackgroundBtn" class="custom-music-apply" type="button">APPLY IMAGE</button>
+            </div>
+          </div>
+
+          <button id="resetBackgroundsBtn" class="custom-music-reset" type="button">RESET BACKGROUNDS</button>
+          <div id="backgroundPickerStatus" class="custom-music-status"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+<button id="mantraManagerBtn" class="mantra-manager-btn" type="button" aria-label="Open mantra manager">MANTRAS</button>
+
+
+
+  <button id="globalSoundToggle" class="global-sound" aria-label="Toggle all music and sounds" title="Sound: ON">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path class="speaker" d="M4 9v6h4l5 4V5L8 9H4z"></path>
+        <path class="wave wave1" d="M16 9.5a4 4 0 0 1 0 5"></path>
+        <path class="wave wave2" d="M18.5 7a7.5 7.5 0 0 1 0 10"></path>
+        <path class="mute-x" d="M16 9l5 6M21 9l-5 6"></path>
+      </svg>
+    </button>
+
+  <div id="mantraManagerPanel" class="mantra-manager-panel" aria-hidden="true">
+    <div class="mantra-manager-card">
+      <div class="mantra-manager-head">
+        <div>
+          <h2>MANTRAS</h2>
+          <p>Tap ✓ to use a mantra, or × to hide it</p>
+        </div>
+        <button id="closeMantraManager" class="mantra-close" aria-label="Close mantra manager">×</button>
+      </div>
+
+      <div id="mantraList" class="mantra-list"></div>
+
+      <div class="mantra-add-row">
+        <input id="newMantraInput" class="mantra-input" type="text" maxlength="40" placeholder="Add a new mantra" />
+        <button id="addMantraBtn" class="mantra-add-btn">ADD</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="audioStatus" class="audio-status">Tap to enable sound</div>
+
+  <main id="home" class="screen active">
+    <div class="home-inner">
+      <div class="brand">MINDFUL FOCUS</div>
+      <section class="timer" aria-label="Session timer">
+        <div id="timeValue" class="time-value">01</div>
+        <div id="timeUnit" class="time-unit">MIN</div>
+        <div class="timer-controls" aria-label="Timer controls">
+          <button id="minus" class="timer-arrow" aria-label="Decrease time">−</button>
+          <button id="unitToggle" class="unit-btn" aria-label="Switch minutes and seconds">MIN</button>
+          <button id="plus" class="timer-arrow" aria-label="Increase time">+</button>
+        </div>
+      </section>
+      <section class="mode-picker" aria-label="Mode selector">
+        <button id="prev" class="arrow" aria-label="Previous mode">‹</button>
+        <button id="start" class="start">MEDITATION</button>
+        <button id="next" class="arrow" aria-label="Next mode">›</button>
+      </section>
+    </div>
+  </main>
+
+  <section id="meditation" class="screen">
+    <div class="topbar"><button class="back">←</button><div class="countdown"></div></div>
+
+    <div class="meditation-center">
+      <div class="meditation-icon-glow" aria-hidden="true">
+        <svg class="meditation-icon" viewBox="0 0 128 128" aria-hidden="true">
+          <circle class="head" cx="64" cy="25" r="9.5"></circle>
+          <path class="torso" d="M50 53c2-13 26-13 28 0v25"></path>
+          <path class="left-arm" d="M49 58c-4 17-14 27-31 28"></path>
+          <path class="right-arm" d="M79 58c4 17 14 27 31 28"></path>
+          <path class="left-leg" d="M41 83c-15 0-23 17 1 18h28c-9-10-18-18-29-18z"></path>
+          <path class="right-leg" d="M87 83c15 0 23 17-1 18H58c9-10 18-18 29-18z"></path>
+          <path class="base" d="M37 93c16 8 38 8 54 0"></path>
+        </svg>
+      </div>
+
+      <div class="meditation-copy">
+        <p>Sit comfortably</p>
+        <p>with your eyes closed</p>
+        <p>and repeat the mantra</p>
+        <p id="mantraText" class="mantra-text">Am-Ya.</p>
+      </div>
+
+      <button id="narratorToggle" class="narrator-toggle" aria-label="Turn voice guide off">Voice Guide: ON</button>
+    </div>
+
+    <div class="complete"><h2>SESSION COMPLETE</h2><p>Tap to return</p></div>
+  </section>
+
+  <section id="breathing" class="screen">
+    <div class="topbar"><button class="back">←</button><div class="countdown"></div></div>
+
+    <div class="breathing-scene-content">
+      <div class="breath-ball-wrap">
+        <div class="breath-ball"></div>
+      </div>
+
+      <div id="breathLabel" class="breath-label">Breathe In</div>
+
+      <button id="breathingNarratorToggle" class="breathing-narrator-toggle" aria-label="Turn breathing voice guide on">
+        Voice Guide: OFF
+      </button>
+    </div>
+
+    <div class="complete"><h2>SESSION COMPLETE</h2><p>Tap to return</p></div>
+  </section>
+
+  <section id="dotmove" class="screen">
+    <div class="topbar"><button class="back">←</button><div class="countdown"></div></div>
+
+    <div class="dot-mode-panel">
+      <div class="dot-title">DOT MOVE</div>
+      <div class="dot-subtitle">Hold the orb, find your calm</div>
+      <div id="dotCountToggle" class="dot-count-toggle" aria-label="Choose one or two dots">
+        <button class="dot-count-btn active" data-count="1">1 Dot</button>
+        <button class="dot-count-btn" data-count="2">2 Dots</button>
+      </div>
+    </div>
+
+    <p class="dot-help">Hold the orb to move it.</p>
+    <div id="dotArea"><div id="dot" class="dot-orb"></div></div>
+    <div id="dotStatus" class="dot-status">HOLD THE ORB TO MOVE</div>
+
+    <div class="complete"><h2>SESSION COMPLETE</h2><p>Tap to return</p></div>
+  </section>
+
+  <script>
+    const modes = [
+      { id: 'meditation', label: 'MEDITATION' },
+      { id: 'breathing', label: 'BREATHINGBALL' },
+      { id: 'dotmove', label: 'DOT MOVE' }
+    ];
+
+    let modeIndex = 0;
+    let amount = 1;
+    let unit = 'min';
+    let timerId = null;
+    let endTime = 0;
+    let activeAudio = null;
+    let soundOn = true;
+    let audioUnlocked = false;
+    let lastWantedAudio = null;
+
+    const $ = selector => document.querySelector(selector);
+
+    const screens = {
+      home: $('#home'),
+      meditation: $('#meditation'),
+      breathing: $('#breathing'),
+      dotmove: $('#dotmove')
+    };
+
+    const audios = {
+      home: $('#homeAudio'),
+      meditation: $('#meditationAudio'),
+      breathing: $('#breathingAudio'),
+      dotmove: $('#dotAudio')
+    };
+
+    const endAudio = $('#endAudio');
+
+    const DEFAULT_AUDIO_SOURCES = {
+      home: 'home_screen_music.mp3',
+      meditation: 'meditation_relaxing_music.mp3',
+      breathing: 'meditation_mode_music.mp3',
+      dotmove: 'dot_move_music.mp3',
+      fallback: 'universal_relax_music.mp3'
+    };
+
+    
+    const BACKGROUND_OPTIONS = [
+      { id: 'home_blue_lake', label: 'Blue Lake', file: 'home_premium_natural_background.png' },
+      { id: 'meditation_mist', label: 'Soft Mist', file: 'meditation_premium_natural_background.png' },
+      { id: 'breathing_night_lake', label: 'Night Lake', file: 'breathing_premium_natural_background.png' },
+      { id: 'dotmove_deep_blue', label: 'Deep Blue', file: 'dotmove_deep_blue_background.png' },
+      { id: 'extra_deep_night', label: 'Deep Night', file: 'extra_deep_night_lake.png' },
+      { id: 'extra_soft_mist', label: 'Bright Mist', file: 'extra_soft_mist_mountains.png' },
+      { id: 'extra_blue_forest', label: 'Blue Forest', file: 'extra_blue_forest_lake.png' },
+      { id: 'extra_aurora_blue', label: 'Aurora Blue', file: 'extra_aurora_blue_lake.png' }
+    ];
+
+    const DEFAULT_BACKGROUNDS = {
+      home: 'home_premium_natural_background.png',
+      meditation: 'meditation_premium_natural_background.png',
+      breathing: 'breathing_premium_natural_background.png',
+      dotmove: 'dotmove_deep_blue_background.png'
+    };
+
+    let backgroundSelections = { ...DEFAULT_BACKGROUNDS };
+    let selectedCustomBackgroundFile = null;
+    const customBackgroundObjectUrls = {};
+
+    let selectedCustomMusicFile = null;
+    const customMusicObjectUrls = {};
+    const audioStatus = $('#audioStatus');
+
+    const DEFAULT_MANTRAS = [
+      "Am-Ya",
+      "So Hum",
+      "Om Shanti",
+      "Aham Prema",
+      "Sat Nam",
+      "Om Namah",
+      "Shivo Hum",
+      "Ra Ma",
+      "Hari Om",
+      "Om Anandam",
+      "Sa Ta Na Ma",
+      "Om Mani",
+      "Ekam Sat",
+      "Om Prem",
+      "Shreem",
+      "Kleem",
+      "Aim Hreem",
+      "Om Tat Sat",
+      "Anandoham",
+      "Om Ram",
+      "Soham Shanti",
+      "Om Vasu",
+      "Shreem Om",
+      "Anahata Hum",
+      "Om Devi",
+      "Sat Chit",
+      "Om Karuna",
+      "Ra Shanti",
+      "Om Veer",
+      "Nirvana Hum",
+      "Om Prana",
+      "Hreem Shanti",
+      "Om Soham",
+      "Aham Om",
+      "Shunya Namah",
+      "Om Dhara",
+      "Satya Hum",
+      "Om Leela",
+      "Prema Om",
+      "Om Aruna",
+      "Chaitanya Hum"
+];
+
+    let mantraItems = [];
+    let activeMantras = [];
+
+    let defaultMeditationNarratorOn = true;
+    let defaultBreathingNarratorOn = false;
+    let narratorOn = true;
+    let breathingNarratorOn = false;
+    let lastSpokenBreath = '';
+    let narrationToken = 0;
+    let mantraRepeatTimer = null;
+
+    
+    function isInsideScrollablePanel(target) {
+      return !!(target && target.closest && target.closest('#settingsPanel, #mantraManagerPanel, .background-choice-grid, .mantra-list'));
+    }
+
+
+    function showAudioStatus(text) {
+      if (!audioStatus) return;
+      audioStatus.textContent = text || 'Tap to enable sound';
+      audioStatus.classList.add('show');
+    }
+
+    function hideAudioStatus() {
+      if (!audioStatus) return;
+      audioStatus.classList.remove('show');
+    }
+
+    function updateBodyScreenState() {
+      document.body.classList.toggle('home-active', !!(screens.home && screens.home.classList.contains('active')));
+      document.body.classList.toggle('meditation-active', !!(screens.meditation && screens.meditation.classList.contains('active')));
+      document.body.classList.toggle('breathing-active', !!(screens.breathing && screens.breathing.classList.contains('active')));
+      document.body.classList.toggle('dotmove-active', !!(screens.dotmove && screens.dotmove.classList.contains('active')));
+    }
+
+    function updateHome() {
+      if ($('#timeValue')) $('#timeValue').textContent = String(amount).padStart(2, '0');
+      if ($('#timeUnit')) $('#timeUnit').textContent = unit === 'min' ? 'MIN' : 'SEC';
+      if ($('#unitToggle')) $('#unitToggle').textContent = unit === 'min' ? 'MIN' : 'SEC';
+      if ($('#start')) $('#start').textContent = modes[modeIndex].label;
+    }
+
+    function fade(audio, target, ms) {
+      if (!audio) return;
+      const start = Number.isFinite(audio.volume) ? audio.volume : 0;
+      const t0 = performance.now();
+      function step(t) {
+        const p = Math.min(1, (t - t0) / Math.max(1, ms));
+        audio.volume = Math.max(0, Math.min(1, start + (target - start) * p));
+        if (p < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }
+
+    function pauseAndReset(audio) {
+      if (!audio) return;
+      try {
+        audio.pause();
+        audio.currentTime = 0;
+        audio.volume = 0;
+      } catch (e) {}
+    }
+
+    function stopAllAudio() {
+      Object.values(audios).forEach(pauseAndReset);
+      pauseAndReset(endAudio);
+      activeAudio = null;
+      lastWantedAudio = null;
+      hideAudioStatus();
+    }
+
+    function targetVolumeForAudio(audio, fallback = 0.78) {
+      if (audio === audios.meditation) return narratorOn ? 0.34 : 0.86;
+      return fallback;
+    }
+
+    function currentAudioForActiveScreen() {
+      if (screens.home && screens.home.classList.contains('active')) return ensureModeMusic('home');
+      const activeMode = modes.find(mode => screens[mode.id] && screens[mode.id].classList.contains('active'));
+      return activeMode ? ensureModeMusic(activeMode.id) : null;
+    }
+
+    
+    function setCustomMusicStatus(message) {
+      const el = $('#customMusicStatus');
+      if (el) el.textContent = message || '';
+    }
+
+    function openMusicDB() {
+      return new Promise((resolve, reject) => {
+        if (!('indexedDB' in window)) {
+          reject(new Error('IndexedDB is not supported in this browser.'));
+          return;
+        }
+
+        const request = indexedDB.open('mindfulCustomMusicDB', 1);
+
+        request.onupgradeneeded = event => {
+          const db = event.target.result;
+          if (!db.objectStoreNames.contains('tracks')) db.createObjectStore('tracks');
+        };
+
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error || new Error('Could not open music storage.'));
+      });
+    }
+
+    async function saveCustomMusic(target, file) {
+      const db = await openMusicDB();
+
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction('tracks', 'readwrite');
+        const store = tx.objectStore('tracks');
+        store.put({
+          blob: file,
+          name: file.name,
+          type: file.type || 'audio/mpeg',
+          updatedAt: Date.now()
+        }, target);
+
+        tx.oncomplete = resolve;
+        tx.onerror = () => reject(tx.error || new Error('Could not save custom music.'));
+      });
+
+      db.close();
+    }
+
+    async function loadCustomMusic(target) {
+      const db = await openMusicDB();
+
+      const track = await new Promise((resolve, reject) => {
+        const tx = db.transaction('tracks', 'readonly');
+        const store = tx.objectStore('tracks');
+        const request = store.get(target);
+
+        request.onsuccess = () => resolve(request.result || null);
+        request.onerror = () => reject(request.error || new Error('Could not load custom music.'));
+      });
+
+      db.close();
+      return track;
+    }
+
+    async function deleteCustomMusic(target) {
+      const db = await openMusicDB();
+
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction('tracks', 'readwrite');
+        const store = tx.objectStore('tracks');
+
+        if (target === 'all') {
+          store.clear();
+        } else {
+          store.delete(target);
+        }
+
+        tx.oncomplete = resolve;
+        tx.onerror = () => reject(tx.error || new Error('Could not delete custom music.'));
+      });
+
+      db.close();
+    }
+
+    function revokeCustomMusicUrl(target) {
+      if (customMusicObjectUrls[target]) {
+        URL.revokeObjectURL(customMusicObjectUrls[target]);
+        delete customMusicObjectUrls[target];
+      }
+    }
+
+    async function applyStoredCustomMusic(target) {
+      try {
+        const track = await loadCustomMusic(target);
+        const audio = audios[target];
+
+        if (!audio || !track || !track.blob) return false;
+
+        revokeCustomMusicUrl(target);
+        const url = URL.createObjectURL(track.blob);
+        customMusicObjectUrls[target] = url;
+
+        const wasActive = activeAudio === audio && !audio.paused;
+        audio.src = url;
+        audio.loop = true;
+        audio.load();
+
+        if (wasActive && soundOn) playAudio(audio, 0.78, true);
+
+        return true;
+      } catch (error) {
+        console.warn('Custom music load failed:', error);
+        return false;
+      }
+    }
+
+    async function loadAllCustomMusic() {
+      for (const target of Object.keys(audios)) {
+        await applyStoredCustomMusic(target);
+      }
+    }
+
+    async function applyCustomMusicFromSettings() {
+      const fileInput = $('#customMusicFile');
+      const targetSelect = $('#customMusicTarget');
+
+      const file = selectedCustomMusicFile || (fileInput && fileInput.files && fileInput.files[0]);
+      const target = targetSelect ? targetSelect.value : 'home';
+
+      if (!file) {
+        setCustomMusicStatus('Choose an audio file first.');
+        return;
+      }
+
+      if (!file.type.startsWith('audio/')) {
+        setCustomMusicStatus('Please choose an audio file.');
+        return;
+      }
+
+      try {
+        setCustomMusicStatus('Saving music...');
+        await saveCustomMusic(target, file);
+        await applyStoredCustomMusic(target);
+
+        const label = target === 'home' ? 'Home Screen' : target === 'dotmove' ? 'DOT MOVE' : target === 'breathing' ? 'Breathingball' : 'Meditation';
+        setCustomMusicStatus(`Custom music applied to ${label}.`);
+
+        if (screens[target]?.classList.contains('active') || (target === 'home' && screens.home.classList.contains('active'))) {
+          playCurrentScreenAudio(true);
+        }
+      } catch (error) {
+        setCustomMusicStatus('Could not save this file. Try a smaller audio file.');
+      }
+    }
+
+    async function resetCustomMusicFromSettings() {
+      try {
+        setCustomMusicStatus('Resetting...');
+        await deleteCustomMusic('all');
+
+        Object.keys(audios).forEach(target => {
+          revokeCustomMusicUrl(target);
+          if (audios[target]) {
+            audios[target].src = DEFAULT_AUDIO_SOURCES[target];
+            audios[target].load();
+          }
+        });
+
+        selectedCustomMusicFile = null;
+
+        const fileInput = $('#customMusicFile');
+        if (fileInput) fileInput.value = '';
+
+        const fileName = $('#customMusicFileName');
+        if (fileName) fileName.textContent = 'Choose audio file';
+
+        ensureAllModeMusic();
+        setCustomMusicStatus('Custom music reset.');
+        if (soundOn) playCurrentScreenAudio(true);
+      } catch (error) {
+        setCustomMusicStatus('Could not reset custom music.');
+      }
+    }
+
+
+    
+    function audioHasPlayableSource(audio) {
+      if (!audio) return false;
+      const src = audio.getAttribute('src') || audio.currentSrc || audio.src || '';
+      return src.trim().length > 0;
+    }
+
+    function ensureModeMusic(mode) {
+      const audio = audios[mode];
+      if (!audio) return null;
+
+      if (!audioHasPlayableSource(audio)) {
+        const fallbackSource = DEFAULT_AUDIO_SOURCES[mode] || DEFAULT_AUDIO_SOURCES.fallback;
+        if (fallbackSource) {
+          audio.src = fallbackSource;
+          audio.loop = true;
+          audio.preload = 'auto';
+        }
+      }
+
+      return audio;
+    }
+
+    function ensureAllModeMusic() {
+      Object.keys(audios).forEach(mode => {
+        ensureModeMusic(mode);
+
+        const audio = audios[mode];
+        if (!audio || audio.dataset.fallbackReady === 'true') return;
+
+        audio.dataset.fallbackReady = 'true';
+        audio.addEventListener('error', () => {
+          const defaultSource = DEFAULT_AUDIO_SOURCES[mode] || DEFAULT_AUDIO_SOURCES.fallback;
+          const current = audio.getAttribute('src') || '';
+
+          if (defaultSource && current !== defaultSource) {
+            audio.src = defaultSource;
+            audio.load();
+            if (soundOn && (activeAudio === audio || currentAudioForActiveScreen() === audio)) {
+              playAudio(audio, mode === 'meditation' ? (narratorOn ? 0.34 : 0.86) : 0.78, true);
+            }
+          } else if (DEFAULT_AUDIO_SOURCES.fallback && current !== DEFAULT_AUDIO_SOURCES.fallback) {
+            audio.src = DEFAULT_AUDIO_SOURCES.fallback;
+            audio.load();
+            if (soundOn && (activeAudio === audio || currentAudioForActiveScreen() === audio)) {
+              playAudio(audio, 0.78, true);
+            }
+          }
+        });
+      });
+    }
+
+
+    async function playAudio(audio, volume = 0.78, restart = false) {
+      if (!audio || !soundOn) return false;
+
+      lastWantedAudio = audio;
+
+      if (activeAudio && activeAudio !== audio) pauseAndReset(activeAudio);
+      activeAudio = audio;
+
+      try {
+        audio.muted = false;
+        audio.playsInline = true;
+        audio.preload = 'auto';
+        if (restart) audio.currentTime = 0;
+      } catch (e) {}
+
+      const target = targetVolumeForAudio(audio, volume);
+      audio.volume = Math.max(audio.volume || 0, 0.05);
+
+      try {
+        await audio.play();
+        audioUnlocked = true;
+        hideAudioStatus();
+        fade(audio, target, 650);
+        return true;
+      } catch (err) {
+        showAudioStatus('Tap to enable sound');
+        return false;
+      }
+    }
+
+    function updateMeditationMusicVolume() {
+      if (activeAudio === audios.meditation && soundOn && screens.meditation.classList.contains('active')) {
+        fade(audios.meditation, narratorOn ? 0.34 : 0.86, 650);
+      }
+    }
+
+    function playCurrentScreenAudio(restart = false) {
+      if (!soundOn) return;
+      const audio = currentAudioForActiveScreen();
+      if (audio) playAudio(audio, 0.78, restart);
+    }
+
+    function unlockAudioFromGesture() {
+      if (!soundOn) return;
+      if (lastWantedAudio) playAudio(lastWantedAudio, 0.78, false);
+      else playCurrentScreenAudio(false);
+      if ('speechSynthesis' in window) {
+        try { window.speechSynthesis.resume(); } catch(e) {}
+      }
+    }
+
+    ['pointerdown', 'touchstart', 'click', 'keydown'].forEach(eventName => {
+      document.addEventListener(eventName, unlockAudioFromGesture, { capture: true });
+    });
+
+    if (audioStatus) {
+      audioStatus.addEventListener('click', event => {
+        event.preventDefault();
+        event.stopPropagation();
+        unlockAudioFromGesture();
+      });
+    }
+
+    function loadVoices() {
+      if (!('speechSynthesis' in window)) return [];
+      return window.speechSynthesis.getVoices();
+    }
+
+    function waitForVoices(timeout = 1200) {
+      return new Promise(resolve => {
+        const voices = loadVoices();
+        if (voices.length) return resolve(voices);
+        const started = Date.now();
+        const timer = setInterval(() => {
+          const nextVoices = loadVoices();
+          if (nextVoices.length || Date.now() - started > timeout) {
+            clearInterval(timer);
+            resolve(nextVoices);
+          }
+        }, 80);
+      });
+    }
+
+    function getBestEnglishVoice() {
+      const voices = loadVoices();
+      const scoreVoice = voice => {
+        const name = voice.name.toLowerCase();
+        const lang = voice.lang.toLowerCase();
+        let score = 0;
+        if (lang.startsWith('en-us')) score += 46;
+        if (lang.startsWith('en-gb')) score += 42;
+        if (lang.startsWith('en-au')) score += 34;
+        if (lang.startsWith('en')) score += 25;
+        if (/natural|neural|online|premium|enhanced|aria|jenny|ava|emma|sonia|serena|samantha|karen|moira|tessa|victoria|google uk english female|google us english|microsoft aria|microsoft jenny/.test(name)) score += 45;
+        if (/compact|novelty|whisper|bad news|bells|boing|bubbles|cellos|zarvox/.test(name)) score -= 45;
+        return score;
+      };
+      return voices.filter(v => /^en/i.test(v.lang)).sort((a, b) => scoreVoice(b) - scoreVoice(a))[0] || null;
+    }
+
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.onvoiceschanged = () => loadVoices();
+      loadVoices();
+    }
+
+    function stopMantraRepeater() {
+      if (mantraRepeatTimer) {
+        clearTimeout(mantraRepeatTimer);
+        mantraRepeatTimer = null;
+      }
+    }
+
+    function stopNarrator() {
+      narrationToken += 1;
+      stopMantraRepeater();
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      if (activeAudio && soundOn) fade(activeAudio, targetVolumeForAudio(activeAudio, 0.78), 400);
+    }
+
+    function mantraForSpeech(mantra) {
+      const cleaned = String(mantra || '').trim().replace(/\s+/g, ' ');
+      if (!cleaned) return '';
+      return cleaned.split(' ').map(word => {
+        const lettersOnly = word.replace(/[^A-Za-z]/g, '');
+        const isAllCapsWord = lettersOnly.length >= 2 && lettersOnly === lettersOnly.toUpperCase();
+        return isAllCapsWord ? word.toLowerCase() : word;
+      }).join(' ');
+    }
+
+    function speakOne(text, token, options = {}) {
+      return new Promise(resolve => {
+        if (!soundOn || !('speechSynthesis' in window) || token !== narrationToken) return resolve();
+        try { window.speechSynthesis.cancel(); window.speechSynthesis.resume(); } catch(e) {}
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'en-US';
+        utterance.rate = options.rate ?? 0.56;
+        utterance.pitch = options.pitch ?? 0.80;
+        utterance.volume = options.volume ?? 0.95;
+        const voice = getBestEnglishVoice();
+        if (voice) utterance.voice = voice;
+
+        utterance.onstart = () => {
+          if (!options.mantraOnly && activeAudio) fade(activeAudio, 0.16, 350);
+          if (options.mantraOnly && activeAudio) fade(activeAudio, 0.22, 250);
+        };
+        utterance.onend = () => {
+          if (activeAudio && soundOn && screens.meditation.classList.contains('active')) {
+            fade(activeAudio, narratorOn ? 0.34 : 0.86, 500);
+          }
+          resolve();
+        };
+        utterance.onerror = () => resolve();
+
+        window.speechSynthesis.speak(utterance);
+      });
+    }
+
+    function naturalPause(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    function scheduleNextMantraRepeat(mantra, token) {
+      stopMantraRepeater();
+      mantraRepeatTimer = setTimeout(async () => {
+        if (!narratorOn || !soundOn || token !== narrationToken || !screens.meditation.classList.contains('active')) return;
+        await speakOne(mantraForSpeech(mantra), token, { rate: 0.47, pitch: 0.76, volume: 0.96, mantraOnly: true });
+        if (narratorOn && soundOn && token === narrationToken && screens.meditation.classList.contains('active')) {
+          scheduleNextMantraRepeat(mantra, token);
+        }
+      }, 3000);
+    }
+
+    async function speakMeditationText() {
+      if (!narratorOn || !soundOn || !('speechSynthesis' in window)) return;
+      stopNarrator();
+      const token = narrationToken;
+      await waitForVoices();
+      if (!narratorOn || !soundOn || !screens.meditation.classList.contains('active') || token !== narrationToken) return;
+      const mantra = ($('#mantraText')?.textContent || 'Am-Ya.').replace(/\.$/, '');
+      await speakOne('Sit comfortably with your eyes closed and repeat the mantra.', token, { rate: 0.54, pitch: 0.80, volume: 0.95 });
+      if (!narratorOn || !soundOn || !screens.meditation.classList.contains('active') || token !== narrationToken) return;
+      await naturalPause(650);
+      await speakOne(mantraForSpeech(mantra), token, { rate: 0.47, pitch: 0.76, volume: 0.98, mantraOnly: true });
+      if (!narratorOn || !soundOn || !screens.meditation.classList.contains('active') || token !== narrationToken) return;
+      scheduleNextMantraRepeat(mantra, token);
+    }
+
+    function loadMantraSettings() {
+      try {
+        const savedItems = JSON.parse(localStorage.getItem('mindfulMantraItems') || 'null');
+        const savedActive = JSON.parse(localStorage.getItem('mindfulActiveMantras') || 'null');
+        mantraItems = Array.isArray(savedItems) && savedItems.length ? savedItems : [...DEFAULT_MANTRAS];
+        activeMantras = Array.isArray(savedActive) && savedActive.length ? savedActive : [...mantraItems];
+        activeMantras = activeMantras.filter(m => mantraItems.includes(m));
+        if (!activeMantras.length) activeMantras = [...mantraItems];
+      } catch (e) {
+        mantraItems = [...DEFAULT_MANTRAS];
+        activeMantras = [...DEFAULT_MANTRAS];
+      }
+    }
+
+    function saveMantraSettings() {
+      try {
+        localStorage.setItem('mindfulMantraItems', JSON.stringify(mantraItems));
+        localStorage.setItem('mindfulActiveMantras', JSON.stringify(activeMantras));
+      } catch (e) {}
+    }
+
+    function renderMantraList() {
+      const list = $('#mantraList');
+      if (!list) return;
+      list.innerHTML = '';
+      mantraItems.forEach(mantra => {
+        const isActive = activeMantras.includes(mantra);
+        const row = document.createElement('div');
+        row.className = 'mantra-choice' + (isActive ? '' : ' hidden-mantra');
+
+        const hideBtn = document.createElement('button');
+        hideBtn.type = 'button';
+        hideBtn.className = 'mantra-choice-btn hide' + (isActive ? '' : ' active');
+        hideBtn.textContent = '×';
+        hideBtn.onclick = event => {
+          event.preventDefault();
+          event.stopPropagation();
+          activeMantras = activeMantras.filter(m => m !== mantra);
+          if (!activeMantras.length) activeMantras = [mantra];
+          saveMantraSettings();
+          renderMantraList();
+        };
+
+        const likeBtn = document.createElement('button');
+        likeBtn.type = 'button';
+        likeBtn.className = 'mantra-choice-btn like' + (isActive ? ' active' : '');
+        likeBtn.textContent = '✓';
+        likeBtn.onclick = event => {
+          event.preventDefault();
+          event.stopPropagation();
+          if (!activeMantras.includes(mantra)) activeMantras.push(mantra);
+          saveMantraSettings();
+          renderMantraList();
+        };
+
+        const name = document.createElement('span');
+        name.textContent = mantra;
+
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'mantra-delete';
+        remove.textContent = 'DELETE';
+        remove.onclick = event => {
+          event.preventDefault();
+          event.stopPropagation();
+          mantraItems = mantraItems.filter(m => m !== mantra);
+          activeMantras = activeMantras.filter(m => m !== mantra);
+          if (!mantraItems.length) {
+            mantraItems = [...DEFAULT_MANTRAS];
+            activeMantras = [...DEFAULT_MANTRAS];
+          } else if (!activeMantras.length) activeMantras = [mantraItems[0]];
+          saveMantraSettings();
+          renderMantraList();
+        };
+
+        row.appendChild(hideBtn);
+        row.appendChild(likeBtn);
+        row.appendChild(name);
+        row.appendChild(remove);
+        list.appendChild(row);
+      });
+    }
+
+    function openMantraManager() {
+      loadMantraSettings();
+      renderMantraList();
+      const panel = $('#mantraManagerPanel');
+      if (panel) {
+        panel.classList.add('show');
+        panel.setAttribute('aria-hidden', 'false');
+      }
+    }
+
+    function closeMantraManager() {
+      const panel = $('#mantraManagerPanel');
+      if (panel) {
+        panel.classList.remove('show');
+        panel.setAttribute('aria-hidden', 'true');
+      }
+    }
+
+    function addCustomMantra() {
+      const input = $('#newMantraInput');
+      if (!input) return;
+      const mantra = input.value.trim().replace(/\s+/g, ' ');
+      if (!mantra) return;
+      if (!mantraItems.includes(mantra)) {
+        mantraItems.push(mantra);
+        activeMantras.push(mantra);
+        saveMantraSettings();
+        renderMantraList();
+      }
+      input.value = '';
+    }
+
+    function setRandomMantra() {
+      const available = activeMantras.length ? activeMantras : mantraItems.length ? mantraItems : DEFAULT_MANTRAS;
+      const mantra = available[Math.floor(Math.random() * available.length)];
+      const mantraEl = $('#mantraText');
+      if (mantraEl) mantraEl.textContent = mantra + '.';
+    }
+
+    function loadVoiceDefaults() {
+      try {
+        const med = localStorage.getItem('mindfulDefaultMeditationNarratorOn');
+        const breath = localStorage.getItem('mindfulDefaultBreathingNarratorOn');
+        defaultMeditationNarratorOn = med === null ? true : med === 'true';
+        defaultBreathingNarratorOn = breath === null ? false : breath === 'true';
+      } catch (e) {
+        defaultMeditationNarratorOn = true;
+        defaultBreathingNarratorOn = false;
+      }
+      narratorOn = defaultMeditationNarratorOn;
+      breathingNarratorOn = defaultBreathingNarratorOn;
+    }
+
+    function saveVoiceDefaults() {
+      try {
+        localStorage.setItem('mindfulDefaultMeditationNarratorOn', String(defaultMeditationNarratorOn));
+        localStorage.setItem('mindfulDefaultBreathingNarratorOn', String(defaultBreathingNarratorOn));
+      } catch (e) {}
+    }
+
+    
+    
+    function openBackgroundDB() {
+      return new Promise((resolve, reject) => {
+        if (!('indexedDB' in window)) {
+          reject(new Error('IndexedDB is not supported in this browser.'));
+          return;
+        }
+
+        const request = indexedDB.open('mindfulCustomBackgroundDB', 1);
+
+        request.onupgradeneeded = event => {
+          const db = event.target.result;
+          if (!db.objectStoreNames.contains('images')) db.createObjectStore('images');
+        };
+
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error || new Error('Could not open image storage.'));
+      });
+    }
+
+    async function saveCustomBackground(target, file) {
+      const db = await openBackgroundDB();
+
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction('images', 'readwrite');
+        const store = tx.objectStore('images');
+
+        store.put({
+          blob: file,
+          name: file.name,
+          type: file.type || 'image/png',
+          updatedAt: Date.now()
+        }, target);
+
+        tx.oncomplete = resolve;
+        tx.onerror = () => reject(tx.error || new Error('Could not save custom image.'));
+      });
+
+      db.close();
+    }
+
+    async function loadCustomBackground(target) {
+      const db = await openBackgroundDB();
+
+      const image = await new Promise((resolve, reject) => {
+        const tx = db.transaction('images', 'readonly');
+        const store = tx.objectStore('images');
+        const request = store.get(target);
+
+        request.onsuccess = () => resolve(request.result || null);
+        request.onerror = () => reject(request.error || new Error('Could not load custom image.'));
+      });
+
+      db.close();
+      return image;
+    }
+
+    async function deleteCustomBackground(target) {
+      const db = await openBackgroundDB();
+
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction('images', 'readwrite');
+        const store = tx.objectStore('images');
+
+        if (target === 'all') store.clear();
+        else store.delete(target);
+
+        tx.oncomplete = resolve;
+        tx.onerror = () => reject(tx.error || new Error('Could not delete custom image.'));
+      });
+
+      db.close();
+    }
+
+    function revokeCustomBackgroundUrl(target) {
+      if (customBackgroundObjectUrls[target]) {
+        URL.revokeObjectURL(customBackgroundObjectUrls[target]);
+        delete customBackgroundObjectUrls[target];
+      }
+    }
+
+    async function getCustomBackgroundUrl(target) {
+      if (customBackgroundObjectUrls[target]) return customBackgroundObjectUrls[target];
+
+      try {
+        const image = await loadCustomBackground(target);
+        if (!image || !image.blob) return null;
+
+        const url = URL.createObjectURL(image.blob);
+        customBackgroundObjectUrls[target] = url;
+        return url;
+      } catch (error) {
+        console.warn('Custom background load failed:', error);
+        return null;
+      }
+    }
+
+    
+    function modeImageTargetSize(target) {
+      if (target === 'dotmove') return { width: 1440, height: 2160 };
+      return { width: 2560, height: 1440 };
+    }
+
+    function drawCoverImage(ctx, img, width, height) {
+      const iw = img.width || img.naturalWidth;
+      const ih = img.height || img.naturalHeight;
+      const scale = Math.max(width / iw, height / ih);
+      const sw = width / scale;
+      const sh = height / scale;
+      const sx = (iw - sw) / 2;
+      const sy = (ih - sh) / 2;
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, width, height);
+    }
+
+    function sharpenImageData(imageData, strength = 0.16) {
+      const { data, width, height } = imageData;
+      const copy = new Uint8ClampedArray(data);
+      const amount = Math.max(0, Math.min(0.30, strength));
+
+      for (let y = 1; y < height - 1; y++) {
+        for (let x = 1; x < width - 1; x++) {
+          const i = (y * width + x) * 4;
+
+          for (let c = 0; c < 3; c++) {
+            const center = copy[i + c] * (1 + 4 * amount);
+            const left = copy[i - 4 + c] * amount;
+            const right = copy[i + 4 + c] * amount;
+            const top = copy[i - width * 4 + c] * amount;
+            const bottom = copy[i + width * 4 + c] * amount;
+            data[i + c] = Math.max(0, Math.min(255, center - left - right - top - bottom));
+          }
+        }
+      }
+
+      return imageData;
+    }
+
+    function canvasToBlob(canvas, type = 'image/jpeg', quality = 0.94) {
+      return new Promise(resolve => {
+        canvas.toBlob(blob => resolve(blob), type, quality);
+      });
+    }
+
+    async function enhanceBackgroundImageFile(file, target) {
+      if (!file || !file.type.startsWith('image/')) return file;
+
+      const targetSize = modeImageTargetSize(target);
+      const bitmap = await createImageBitmap(file);
+
+      const canvas = document.createElement('canvas');
+      canvas.width = targetSize.width;
+      canvas.height = targetSize.height;
+
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+
+      drawCoverImage(ctx, bitmap, canvas.width, canvas.height);
+
+      const temp = document.createElement('canvas');
+      temp.width = canvas.width;
+      temp.height = canvas.height;
+      const tctx = temp.getContext('2d');
+      tctx.filter = target === 'dotmove'
+        ? 'brightness(1.05) contrast(1.13) saturate(1.18)'
+        : 'brightness(1.04) contrast(1.10) saturate(1.10)';
+      tctx.drawImage(canvas, 0, 0);
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(temp, 0, 0);
+
+      try {
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        ctx.putImageData(sharpenImageData(imageData, 0.16), 0, 0);
+      } catch (e) {
+        // If pixel processing fails, resize and filter enhancement still works.
+      }
+
+      const blob = await canvasToBlob(canvas, 'image/jpeg', 0.94);
+      if (!blob) return file;
+
+      return new File(
+        [blob],
+        file.name.replace(/\.[^.]+$/, '') + '_enhanced.jpg',
+        { type: 'image/jpeg', lastModified: Date.now() }
+      );
+    }
+
+
+    async function applyCustomBackgroundFromSettings() {
+      const input = $('#customBackgroundFile');
+      const targetSelect = $('#customBackgroundTarget');
+
+      const file = selectedCustomBackgroundFile || (input && input.files && input.files[0]);
+      const target = targetSelect ? targetSelect.value : 'home';
+
+      if (!file) {
+        setBackgroundPickerStatus('Choose an image first.');
+        return;
+      }
+
+      if (!file.type.startsWith('image/')) {
+        setBackgroundPickerStatus('Please choose an image file.');
+        return;
+      }
+
+      try {
+        setBackgroundPickerStatus('Enhancing image quality...');
+        const enhancedFile = await enhanceBackgroundImageFile(file, target);
+
+        setBackgroundPickerStatus('Saving enhanced image...');
+        await saveCustomBackground(target, enhancedFile);
+        revokeCustomBackgroundUrl(target);
+
+        const url = await getCustomBackgroundUrl(target);
+        if (!url) throw new Error('Could not create image preview.');
+
+        backgroundSelections[target] = `custom:${target}`;
+        saveBackgroundSelections();
+        applyBackgroundToMode(target, backgroundSelections[target]);
+        renderBackgroundChoices();
+
+        const targetLabel = target === 'home' ? 'Home Screen' : target === 'dotmove' ? 'DOT MOVE' : target === 'breathing' ? 'Breathingball' : 'Meditation';
+        setBackgroundPickerStatus(`Enhanced image applied to ${targetLabel}.`);
+      } catch (error) {
+        setBackgroundPickerStatus('Could not save this image. Try a smaller file.');
+      }
+    }
+
+
+    function setBackgroundPickerStatus(message) {
+      const el = $('#backgroundPickerStatus');
+      if (el) el.textContent = message || '';
+    }
+
+    function cssBackgroundFor(file) {
+      const safeFile = String(file || '');
+      if (safeFile.startsWith('custom:')) {
+        const target = safeFile.split(':')[1];
+        const url = customBackgroundObjectUrls[target];
+        if (url) return `url('${url}') center / cover no-repeat`;
+        return `url('${DEFAULT_BACKGROUNDS[target] || DEFAULT_BACKGROUNDS.home}') center / cover no-repeat`;
+      }
+      return `url('${safeFile}') center / cover no-repeat`;
+    }
+
+    async function applyBackgroundToMode(mode, file) {
+      const screen = mode === 'home' ? screens.home : screens[mode];
+      if (!screen || !file) return;
+
+      if (String(file).startsWith('custom:')) {
+        const customTarget = String(file).split(':')[1];
+        await getCustomBackgroundUrl(customTarget);
+      }
+
+      if (mode === 'meditation') {
+        screen.style.background = `
+          radial-gradient(circle at 50% 48%, rgba(12, 31, 46, .015), rgba(0, 7, 12, .14) 68%, rgba(0, 4, 8, .36) 100%),
+          linear-gradient(rgba(0, 8, 14, .02), rgba(0, 8, 14, .10)),
+          ${cssBackgroundFor(file)}
+        `;
+      } else if (mode === 'breathing') {
+        screen.style.background = `
+          linear-gradient(180deg, rgba(2, 8, 18, .015), rgba(2, 8, 18, .07) 54%, rgba(2, 8, 18, .18) 100%),
+          ${cssBackgroundFor(file)},
+          linear-gradient(180deg, #05162c 0%, #0a274a 48%, #06182e 70%, #02070d 100%)
+        `;
+      } else if (mode === 'dotmove') {
+        screen.style.background = `
+          linear-gradient(180deg, rgba(2, 8, 18, .01), rgba(2, 8, 18, .045) 52%, rgba(2, 8, 18, .14) 100%),
+          ${cssBackgroundFor(file)},
+          linear-gradient(180deg, #06172d, #02070d)
+        `;
+      } else {
+        screen.style.background = `
+          linear-gradient(180deg, rgba(0, 8, 18, .015), rgba(0, 8, 18, .055) 52%, rgba(0, 8, 18, .16) 100%),
+          ${cssBackgroundFor(file)}
+        `;
+      }
+    }
+
+    function applyAllSelectedBackgrounds() {
+      Object.keys(backgroundSelections).forEach(mode => {
+        applyBackgroundToMode(mode, backgroundSelections[mode]);
+      });
+    }
+
+    async function loadBackgroundSelections() {
+      try {
+        const saved = JSON.parse(localStorage.getItem('mindfulBackgroundSelections') || 'null');
+        backgroundSelections = { ...DEFAULT_BACKGROUNDS, ...(saved || {}) };
+      } catch (e) {
+        backgroundSelections = { ...DEFAULT_BACKGROUNDS };
+      }
+
+      for (const mode of Object.keys(backgroundSelections)) {
+        if (String(backgroundSelections[mode]).startsWith('custom:')) {
+          await getCustomBackgroundUrl(mode);
+        }
+      }
+
+      applyAllSelectedBackgrounds();
+    }
+
+    function saveBackgroundSelections() {
+      try {
+        localStorage.setItem('mindfulBackgroundSelections', JSON.stringify(backgroundSelections));
+      } catch (e) {}
+    }
+
+    function renderBackgroundChoices() {
+      const grid = $('#backgroundChoiceGrid');
+      const targetSelect = $('#backgroundTarget');
+      if (!grid || !targetSelect) return;
+
+      const target = targetSelect.value || 'home';
+      const selectedFile = backgroundSelections[target];
+
+      grid.innerHTML = '';
+
+      if (selectedFile === `custom:${target}` || customBackgroundObjectUrls[target]) {
+        const customBtn = document.createElement('button');
+        customBtn.type = 'button';
+        customBtn.className = 'background-choice' + (selectedFile === `custom:${target}` ? ' active' : '');
+        customBtn.setAttribute('aria-label', 'Use your custom image background');
+
+        const img = document.createElement('img');
+        img.src = customBackgroundObjectUrls[target] || DEFAULT_BACKGROUNDS[target];
+        img.alt = '';
+
+        const label = document.createElement('span');
+        label.textContent = 'Your Image';
+
+        customBtn.appendChild(img);
+        customBtn.appendChild(label);
+
+        customBtn.onclick = event => {
+          event.preventDefault();
+          event.stopPropagation();
+
+          backgroundSelections[target] = `custom:${target}`;
+          saveBackgroundSelections();
+          applyBackgroundToMode(target, backgroundSelections[target]);
+          renderBackgroundChoices();
+          setBackgroundPickerStatus('Your image was applied.');
+        };
+
+        grid.appendChild(customBtn);
+      }
+
+      BACKGROUND_OPTIONS.forEach(option => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'background-choice' + (option.file === selectedFile ? ' active' : '');
+        btn.setAttribute('aria-label', `Use ${option.label} background`);
+
+        const img = document.createElement('img');
+        img.src = option.file;
+        img.alt = '';
+
+        const label = document.createElement('span');
+        label.textContent = option.label;
+
+        btn.appendChild(img);
+        btn.appendChild(label);
+
+        btn.onclick = event => {
+          event.preventDefault();
+          event.stopPropagation();
+
+          backgroundSelections[target] = option.file;
+          saveBackgroundSelections();
+          applyBackgroundToMode(target, option.file);
+          renderBackgroundChoices();
+
+          const targetLabel = target === 'home' ? 'Home Screen' : target === 'dotmove' ? 'DOT MOVE' : target === 'breathing' ? 'Breathingball' : 'Meditation';
+          setBackgroundPickerStatus(`${option.label} applied to ${targetLabel}.`);
+        };
+
+        grid.appendChild(btn);
+      });
+    }
+
+    async function resetBackgroundSelections() {
+      backgroundSelections = { ...DEFAULT_BACKGROUNDS };
+      saveBackgroundSelections();
+
+      try {
+        await deleteCustomBackground('all');
+      } catch (e) {}
+
+      Object.keys(customBackgroundObjectUrls).forEach(revokeCustomBackgroundUrl);
+
+      selectedCustomBackgroundFile = null;
+      const input = $('#customBackgroundFile');
+      if (input) input.value = '';
+
+      const fileName = $('#customBackgroundFileName');
+      if (fileName) fileName.textContent = 'Choose your own image';
+
+      applyAllSelectedBackgrounds();
+      renderBackgroundChoices();
+      setBackgroundPickerStatus('Backgrounds reset.');
+    }
+
+    function updateSettingsSoundButton() {
+      const btn = $('#settingsSoundToggle');
+      if (!btn) return;
+      btn.classList.toggle('off', !soundOn);
+      const state = btn.querySelector('strong');
+      if (state) state.textContent = soundOn ? 'ON' : 'OFF';
+    }
+
+    function updateDefaultVoiceButtons() {
+      const medBtn = $('#defaultMeditationNarratorToggle');
+      if (medBtn) {
+        medBtn.classList.toggle('off', !defaultMeditationNarratorOn);
+        const state = medBtn.querySelector('strong');
+        if (state) state.textContent = defaultMeditationNarratorOn ? 'ON' : 'OFF';
+      }
+      const breathBtn = $('#defaultBreathingNarratorToggle');
+      if (breathBtn) {
+        breathBtn.classList.toggle('off', !defaultBreathingNarratorOn);
+        const state = breathBtn.querySelector('strong');
+        if (state) state.textContent = defaultBreathingNarratorOn ? 'ON' : 'OFF';
+      }
+    }
+
+    function openSettings() {
+      updateSettingsSoundButton();
+      updateDefaultVoiceButtons();
+      renderBackgroundChoices();
+      const panel = $('#settingsPanel');
+      if (panel) {
+        panel.classList.add('show');
+        panel.setAttribute('aria-hidden', 'false');
+      }
+    }
+
+    function closeSettings() {
+      const panel = $('#settingsPanel');
+      if (panel) {
+        panel.classList.remove('show');
+        panel.setAttribute('aria-hidden', 'true');
+      }
+    }
+
+    function updateGlobalSoundButton() {
+      const btn = $('#globalSoundToggle');
+      if (btn) {
+        btn.classList.toggle('muted', !soundOn);
+        btn.title = soundOn ? 'Sound: ON' : 'Sound: OFF';
+      }
+      updateSettingsSoundButton();
+    }
+
+    function updateNarratorButton() {
+      const btn = $('#narratorToggle');
+      if (!btn) return;
+      btn.textContent = narratorOn ? 'Voice Guide: ON' : 'Voice Guide: OFF';
+      btn.classList.toggle('off', !narratorOn);
+    }
+
+    function updateBreathingNarratorButton() {
+      const btn = $('#breathingNarratorToggle');
+      if (!btn) return;
+      btn.textContent = breathingNarratorOn ? 'Voice Guide: ON' : 'Voice Guide: OFF';
+      btn.classList.toggle('off', !breathingNarratorOn);
+    }
+
+    function speakBreathingCue(cue) {
+      if (!breathingNarratorOn || !soundOn || !('speechSynthesis' in window)) return;
+      if (!screens.breathing.classList.contains('active')) return;
+      const cleanCue = String(cue).replace(/\.$/, '');
+      if (cleanCue === lastSpokenBreath) return;
+      lastSpokenBreath = cleanCue;
+      const utterance = new SpeechSynthesisUtterance(cleanCue);
+      utterance.lang = 'en-US';
+      utterance.rate = 0.62;
+      utterance.pitch = 0.84;
+      utterance.volume = 0.92;
+      const voice = getBestEnglishVoice();
+      if (voice) utterance.voice = voice;
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function startMode() {
+      const mode = modes[modeIndex].id;
+      stopNarrator();
+      stopDotMove();
+      stopAllAudio();
+      clearInterval(timerId);
+      Object.values(screens).forEach(screen => screen?.classList.remove('active'));
+      screens[mode].classList.add('active');
+      updateBodyScreenState();
+
+      if (mode === 'meditation') {
+        narratorOn = defaultMeditationNarratorOn;
+        updateNarratorButton();
+      }
+      if (mode === 'breathing') {
+        breathingNarratorOn = defaultBreathingNarratorOn;
+        updateBreathingNarratorButton();
+      }
+
+      if (soundOn) playAudio(ensureModeMusic(mode), mode === 'meditation' ? (narratorOn ? 0.34 : 0.86) : 0.78, true);
+
+      if (mode === 'meditation') {
+        setRandomMantra();
+        updateMeditationMusicVolume();
+        if (narratorOn) setTimeout(() => speakMeditationText(), 80);
+      }
+      if (mode === 'breathing') {
+        lastSpokenBreath = '';
+        startBreathingText();
+      }
+      if (mode === 'dotmove') startDotMove();
+      startTimer(screens[mode]);
+    }
+
+    function startTimer(screen) {
+      const duration = amount * (unit === 'min' ? 60000 : 1000);
+      endTime = Date.now() + duration;
+      clearInterval(timerId);
+      tick(screen);
+      timerId = setInterval(() => tick(screen), 250);
+    }
+
+    function tick(screen) {
+      if (!screen) return;
+      const left = Math.max(0, endTime - Date.now());
+      const total = Math.ceil(left / 1000);
+      const minutes = Math.floor(total / 60);
+      const seconds = total % 60;
+      const display = screen.querySelector('.countdown');
+      if (display) display.textContent = String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+      if (!left) complete(screen);
+    }
+
+    function complete(screen) {
+      stopNarrator();
+      clearInterval(timerId);
+      timerId = null;
+      if (screen.id === 'dotmove') stopDotMove();
+      if (activeAudio) fade(activeAudio, 0, 500);
+      const completeEl = screen.querySelector('.complete');
+      if (completeEl) completeEl.classList.add('show');
+      setTimeout(() => {
+        stopAllAudio();
+        if (soundOn && endAudio) {
+          endAudio.currentTime = 0;
+          endAudio.volume = 0.86;
+          endAudio.play().catch(() => showAudioStatus('Tap to play completion sound'));
+        }
+      }, 550);
+    }
+
+    function goHome() {
+      clearInterval(timerId);
+      timerId = null;
+      stopNarrator();
+      stopDotMove();
+      stopAllAudio();
+      Object.values(screens).forEach(screen => screen?.classList.remove('active'));
+      document.querySelectorAll('.complete').forEach(el => el.classList.remove('show'));
+      screens.home.classList.add('active');
+      updateBodyScreenState();
+      updateHome();
+      if (soundOn) playAudio(ensureModeMusic('home'), 0.78, true);
+    }
+
+    let breathTextTimer = null;
+    function startBreathingText() {
+      clearInterval(breathTextTimer);
+      const label = $('#breathLabel');
+      let lastCue = '';
+      function setText() {
+        const seconds = (Date.now() / 1000) % 8;
+        const cue = seconds < 4 ? 'Breathe In' : 'Breathe Out';
+        if (label) label.textContent = cue + '.';
+        if (cue !== lastCue) {
+          lastCue = cue;
+          speakBreathingCue(cue);
+        }
+      }
+      setText();
+      breathTextTimer = setInterval(setText, 250);
+    }
+
+    const area = $('#dotArea');
+    const status = $('#dotStatus');
+    let raf = null;
+    let dotModeCount = 1;
+    let dotStates = [];
+    const dotSafeMargin = 120;
+
+    function createDotState(element, index) {
+      const rect = area.getBoundingClientRect();
+      const size = element.getBoundingClientRect().width || 104;
+      const marginX = Math.min(dotSafeMargin, rect.width * 0.18);
+      const marginY = Math.min(dotSafeMargin, rect.height * 0.18);
+      const twoDots = dotModeCount === 2;
+      const radiusX = Math.max(60, Math.min((rect.width - size - marginX * 2) * (twoDots ? 0.21 : 0.28), twoDots ? 160 : 220));
+      const radiusY = Math.max(48, Math.min((rect.height - size - marginY * 2) * (twoDots ? 0.18 : 0.24), twoDots ? 120 : 155));
+      return {
+        element, size, index,
+        holding: false,
+        pausedByPointerMove: false,
+        centerX: rect.width / 2 + (twoDots ? (index === 0 ? -radiusX * 0.60 : radiusX * 0.60) : 0),
+        centerY: rect.height / 2,
+        radiusX, radiusY,
+        angle: Math.random() * Math.PI * 2 + index * Math.PI,
+        speed: (twoDots ? 0.0024 : 0.0034) + Math.random() * 0.0012,
+        driftX: 0, driftY: 0, targetDriftX: 0, targetDriftY: 0,
+        nextRandomTurn: performance.now() + 900 + Math.random() * 1600,
+        x: 0, y: 0
+      };
+    }
+
+    function setupDotElements() {
+      if (!area) return;
+      const all = Array.from(area.querySelectorAll('.dot-orb, #dot'));
+      all.forEach((el, idx) => { if (idx > 0) el.remove(); });
+      const first = $('#dot') || area.querySelector('.dot-orb');
+      if (!first) return;
+      first.id = 'dot';
+      first.classList.add('dot-orb');
+      if (dotModeCount === 2) {
+        const second = first.cloneNode(false);
+        second.removeAttribute('id');
+        second.classList.add('dot-orb');
+        area.appendChild(second);
+      }
+      dotStates = Array.from(area.querySelectorAll('.dot-orb')).slice(0, dotModeCount).map((el, index) => createDotState(el, index));
+      dotStates.forEach(state => {
+        state.element.onpointerdown = event => holdDot(event, state);
+        state.element.onpointerup = event => releaseDot(event, state);
+        state.element.onpointercancel = event => releaseDot(event, state);
+        state.element.onlostpointercapture = event => releaseDot(event, state);
+        state.element.onpointermove = event => pointerMoveStopsDot(event, state);
+      });
+    }
+
+    function clampDot(state) {
+      const rect = area.getBoundingClientRect();
+      const marginX = Math.min(dotSafeMargin, rect.width * 0.18);
+      const marginY = Math.min(dotSafeMargin, rect.height * 0.18);
+      state.x = Math.max(marginX, Math.min(rect.width - state.size - marginX, state.x));
+      state.y = Math.max(marginY, Math.min(rect.height - state.size - marginY, state.y));
+    }
+
+    function setDotPosition(state) {
+      state.element.style.left = state.x + 'px';
+      state.element.style.top = state.y + 'px';
+    }
+
+    function startDotMove() {
+      if (!area) return;
+      setupDotElements();
+      dotStates.forEach(state => {
+        state.holding = false;
+        state.pausedByPointerMove = false;
+        state.element.classList.remove('holding');
+        state.x = state.centerX + Math.cos(state.angle) * state.radiusX - state.size / 2;
+        state.y = state.centerY + Math.sin(state.angle) * state.radiusY - state.size / 2;
+        clampDot(state);
+        setDotPosition(state);
+      });
+      if (status) status.textContent = dotModeCount === 2 ? 'HOLD AN ORB TO MOVE IT' : 'HOLD THE ORB TO MOVE';
+      loopDot();
+    }
+
+    function stopDotMove() {
+      if (raf) cancelAnimationFrame(raf);
+      raf = null;
+      dotStates.forEach(state => {
+        state.holding = false;
+        state.pausedByPointerMove = false;
+        state.element.classList.remove('holding');
+      });
+    }
+
+    function loopDot() {
+      if (area) {
+        dotStates.forEach(state => {
+          if (!state.holding || state.pausedByPointerMove) return;
+          const twoDots = dotModeCount === 2;
+          state.angle += state.speed;
+          const now = performance.now();
+          if (now > state.nextRandomTurn) {
+            const intensity = twoDots ? 42 : 68;
+            state.targetDriftX = (Math.random() - 0.5) * intensity;
+            state.targetDriftY = (Math.random() - 0.5) * intensity * 0.65;
+            state.speed = (twoDots ? 0.0022 : 0.0031) + Math.random() * 0.0012;
+            state.nextRandomTurn = now + 1200 + Math.random() * 2200;
+          }
+          state.driftX += (state.targetDriftX - state.driftX) * 0.008;
+          state.driftY += (state.targetDriftY - state.driftY) * 0.008;
+          const naturalDriftX = Math.sin(state.angle * 0.41) * (twoDots ? 14 : 22);
+          const naturalDriftY = Math.cos(state.angle * 0.29) * (twoDots ? 11 : 17);
+          state.x = state.centerX + state.driftX + naturalDriftX + Math.cos(state.angle) * state.radiusX - state.size / 2;
+          state.y = state.centerY + state.driftY + naturalDriftY + Math.sin(state.angle) * state.radiusY - state.size / 2;
+          clampDot(state);
+          setDotPosition(state);
+        });
+      }
+      raf = requestAnimationFrame(loopDot);
+    }
+
+    function holdDot(event, state) {
+      event.preventDefault();
+      state.holding = true;
+      state.pausedByPointerMove = false;
+      state.element.classList.add('holding');
+      try { state.element.setPointerCapture(event.pointerId); } catch (e) {}
+      if (status) status.textContent = 'KEEP HOLDING';
+    }
+
+    function releaseDot(event, state) {
+      if (event) event.preventDefault();
+      state.holding = false;
+      state.pausedByPointerMove = false;
+      state.element.classList.remove('holding');
+      try { state.element.releasePointerCapture(event.pointerId); } catch (e) {}
+      if (status) status.textContent = 'PAUSED — HOLD TO CONTINUE';
+    }
+
+    function pointerMoveStopsDot(event, state) {
+      if (!state.holding) return;
+      const rect = state.element.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const dx = event.clientX - cx;
+      const dy = event.clientY - cy;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      if (distance > rect.width * 0.42) {
+        state.pausedByPointerMove = true;
+        state.holding = false;
+        state.element.classList.remove('holding');
+        try { state.element.releasePointerCapture(event.pointerId); } catch (e) {}
+        if (status) status.textContent = 'PAUSED — HOLD THE ORB AGAIN';
+      }
+    }
+
+    function setDotMode(count) {
+      dotModeCount = Number(count) === 2 ? 2 : 1;
+      document.querySelectorAll('.dot-count-btn').forEach(btn => {
+        const active = Number(btn.getAttribute('data-count')) === dotModeCount;
+        btn.classList.toggle('active', active);
+        btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+      });
+      if (screens.dotmove && screens.dotmove.classList.contains('active')) startDotMove();
+    }
+
+    if ($('#minus')) $('#minus').onclick = () => { amount = Math.max(1, amount - 1); updateHome(); };
+    if ($('#plus')) $('#plus').onclick = () => { amount = Math.min(59, amount + 1); updateHome(); };
+    if ($('#unitToggle')) $('#unitToggle').onclick = () => { unit = unit === 'min' ? 'sec' : 'min'; updateHome(); };
+    if ($('#prev')) $('#prev').onclick = () => { modeIndex = (modeIndex + modes.length - 1) % modes.length; updateHome(); };
+    if ($('#next')) $('#next').onclick = () => { modeIndex = (modeIndex + 1) % modes.length; updateHome(); };
+    if ($('#start')) $('#start').onclick = event => {
+      event.preventDefault();
+      startMode();
+    };
+
+    document.querySelectorAll('.back, .complete').forEach(el => el.addEventListener('click', goHome));
+
+    const narratorToggle = $('#narratorToggle');
+    if (narratorToggle) {
+      narratorToggle.onclick = event => {
+        event.stopPropagation();
+        narratorOn = !narratorOn;
+        updateNarratorButton();
+        updateMeditationMusicVolume();
+        if (!narratorOn) stopNarrator();
+        else if (screens.meditation.classList.contains('active')) speakMeditationText();
+      };
+    }
+
+    const breathingNarratorToggle = $('#breathingNarratorToggle');
+    if (breathingNarratorToggle) {
+      breathingNarratorToggle.onclick = event => {
+        event.stopPropagation();
+        breathingNarratorOn = !breathingNarratorOn;
+        updateBreathingNarratorButton();
+        if (!breathingNarratorOn && 'speechSynthesis' in window) window.speechSynthesis.cancel();
+        else if (screens.breathing.classList.contains('active')) {
+          const currentCue = ($('#breathLabel')?.textContent || 'Breathe In').replace(/\.$/, '');
+          lastSpokenBreath = '';
+          speakBreathingCue(currentCue);
+        }
+      };
+    }
+
+    const dotCountToggle = $('#dotCountToggle');
+    if (dotCountToggle) {
+      dotCountToggle.addEventListener('pointerdown', event => event.stopPropagation());
+      dotCountToggle.addEventListener('click', event => {
+        event.preventDefault();
+        event.stopPropagation();
+        const btn = event.target.closest('.dot-count-btn');
+        if (!btn) return;
+        setDotMode(Number(btn.dataset.count));
+      });
+    }
+
+    const settingsButton = $('#settingsToggle');
+    if (settingsButton) {
+      settingsButton.onclick = event => {
+        event.preventDefault();
+        event.stopPropagation();
+        openSettings();
+        return false;
+      };
+    }
+
+    if ($('#closeSettings')) {
+      $('#closeSettings').onclick = event => {
+        event.preventDefault();
+        event.stopPropagation();
+        closeSettings();
+      };
+    }
+
+    if ($('#settingsPanel')) {
+      $('#settingsPanel').addEventListener('click', event => {
+        if (event.target.id === 'settingsPanel') closeSettings();
+      });
+    }
+
+    if ($('#settingsSoundToggle')) {
+      $('#settingsSoundToggle').onclick = event => {
+        event.preventDefault();
+        event.stopPropagation();
+        soundOn = !soundOn;
+        updateGlobalSoundButton();
+        if (!soundOn) {
+          stopNarrator();
+          stopAllAudio();
+          return;
+        }
+        playCurrentScreenAudio(false);
+        if (screens.meditation && screens.meditation.classList.contains('active') && narratorOn) speakMeditationText();
+      };
+    }
+
+    if ($('#settingsMantrasBtn')) {
+      $('#settingsMantrasBtn').onclick = event => {
+        event.preventDefault();
+        event.stopPropagation();
+        closeSettings();
+        openMantraManager();
+      };
+    }
+
+    if ($('#defaultMeditationNarratorToggle')) {
+      $('#defaultMeditationNarratorToggle').onclick = event => {
+        event.preventDefault();
+        event.stopPropagation();
+        defaultMeditationNarratorOn = !defaultMeditationNarratorOn;
+        saveVoiceDefaults();
+        updateDefaultVoiceButtons();
+        if (screens.meditation && screens.meditation.classList.contains('active')) {
+          narratorOn = defaultMeditationNarratorOn;
+          updateNarratorButton();
+          updateMeditationMusicVolume();
+          if (!narratorOn) stopNarrator();
+          else if (soundOn) speakMeditationText();
+        }
+      };
+    }
+
+    if ($('#defaultBreathingNarratorToggle')) {
+      $('#defaultBreathingNarratorToggle').onclick = event => {
+        event.preventDefault();
+        event.stopPropagation();
+        defaultBreathingNarratorOn = !defaultBreathingNarratorOn;
+        breathingNarratorOn = defaultBreathingNarratorOn;
+        saveVoiceDefaults();
+        updateDefaultVoiceButtons();
+        updateBreathingNarratorButton();
+        if (!breathingNarratorOn && 'speechSynthesis' in window) window.speechSynthesis.cancel();
+      };
+    }
+
+    const mantraButton = $('#mantraManagerBtn');
+    if (mantraButton) {
+      mantraButton.onclick = event => {
+        event.preventDefault();
+        event.stopPropagation();
+        openMantraManager();
+        return false;
+      };
+    }
+
+    if ($('#closeMantraManager')) {
+      $('#closeMantraManager').onclick = event => {
+        event.preventDefault();
+        event.stopPropagation();
+        closeMantraManager();
+      };
+    }
+
+    if ($('#mantraManagerPanel')) {
+      $('#mantraManagerPanel').addEventListener('click', event => {
+        if (event.target.id === 'mantraManagerPanel') closeMantraManager();
+      });
+    }
+
+    if ($('#addMantraBtn')) {
+      $('#addMantraBtn').onclick = event => {
+        event.preventDefault();
+        event.stopPropagation();
+        addCustomMantra();
+      };
+    }
+
+    if ($('#newMantraInput')) {
+      $('#newMantraInput').addEventListener('keydown', event => {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          addCustomMantra();
+        }
+      });
+    }
+
+    
+    if ($('#customMusicFile')) {
+      $('#customMusicFile').addEventListener('change', event => {
+        selectedCustomMusicFile = event.target.files && event.target.files[0] ? event.target.files[0] : null;
+        const name = selectedCustomMusicFile ? selectedCustomMusicFile.name : 'Choose audio file';
+        const fileName = $('#customMusicFileName');
+        if (fileName) fileName.textContent = name;
+        setCustomMusicStatus(selectedCustomMusicFile ? 'Ready to apply.' : '');
+      });
+    }
+
+    if ($('#applyCustomMusicBtn')) {
+      $('#applyCustomMusicBtn').onclick = event => {
+        event.preventDefault();
+        event.stopPropagation();
+        applyCustomMusicFromSettings();
+      };
+    }
+
+    if ($('#resetCustomMusicBtn')) {
+      $('#resetCustomMusicBtn').onclick = event => {
+        event.preventDefault();
+        event.stopPropagation();
+        resetCustomMusicFromSettings();
+      };
+    }
+
+
+    
+    
+    if ($('#customBackgroundFile')) {
+      $('#customBackgroundFile').addEventListener('change', event => {
+        selectedCustomBackgroundFile = event.target.files && event.target.files[0] ? event.target.files[0] : null;
+
+        const name = selectedCustomBackgroundFile ? selectedCustomBackgroundFile.name : 'Choose your own image';
+        const fileName = $('#customBackgroundFileName');
+        if (fileName) fileName.textContent = name;
+
+        setBackgroundPickerStatus(selectedCustomBackgroundFile ? 'Image ready. It will be enhanced automatically.' : '');
+      });
+    }
+
+    if ($('#applyCustomBackgroundBtn')) {
+      $('#applyCustomBackgroundBtn').onclick = event => {
+        event.preventDefault();
+        event.stopPropagation();
+        applyCustomBackgroundFromSettings();
+      };
+    }
+
+
+    if ($('#backgroundTarget')) {
+      $('#backgroundTarget').addEventListener('change', () => {
+        renderBackgroundChoices();
+        setBackgroundPickerStatus('');
+      });
+    }
+
+    if ($('#resetBackgroundsBtn')) {
+      $('#resetBackgroundsBtn').onclick = event => {
+        event.preventDefault();
+        event.stopPropagation();
+        resetBackgroundSelections();
+      };
+    }
+
+
+    document.addEventListener('selectstart', event => {
+      if (event.target && (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA' || isInsideScrollablePanel(event.target))) return;
+      event.preventDefault();
+    });
+    document.addEventListener('dragstart', event => {
+      if (isInsideScrollablePanel(event.target)) return;
+      event.preventDefault();
+    });
+
+    ensureAllModeMusic();
+    loadVoiceDefaults();
+    loadBackgroundSelections();
+    loadMantraSettings();
+    loadAllCustomMusic();
+    updateGlobalSoundButton();
+    updateSettingsSoundButton();
+    updateDefaultVoiceButtons();
+    updateNarratorButton();
+    updateBreathingNarratorButton();
+    setDotMode(1);
+    updateBodyScreenState();
+    updateHome();
+
+  
+  
+
+    // FINAL BACKGROUND CHANGER FIX
+    function getBackgroundTargetLabel(target) {
+      if (target === 'home') return 'Home Screen';
+      if (target === 'meditation') return 'Meditation';
+      if (target === 'breathing') return 'Breathingball';
+      if (target === 'dotmove') return 'DOT MOVE';
+      return target;
+    }
+
+    function setBackgroundPickerStatusSafe(message) {
+      const el = document.getElementById('backgroundPickerStatus');
+      if (el) el.textContent = message || '';
+    }
+
+    function getBackgroundFileForMode(mode) {
+      return backgroundSelections && backgroundSelections[mode]
+        ? backgroundSelections[mode]
+        : (DEFAULT_BACKGROUNDS && DEFAULT_BACKGROUNDS[mode] ? DEFAULT_BACKGROUNDS[mode] : '');
+    }
+
+    async function resolveBackgroundFileFinal(file, mode) {
+      const value = String(file || '');
+
+      if (value.startsWith('custom:')) {
+        const target = value.split(':')[1] || mode;
+
+        try {
+          if (typeof getCustomBackgroundUrl === 'function') {
+            const url = await getCustomBackgroundUrl(target);
+            if (url) return url;
+          }
+        } catch (e) {}
+
+        return DEFAULT_BACKGROUNDS[target] || DEFAULT_BACKGROUNDS[mode] || '';
+      }
+
+      return value;
+    }
+
+    async function applyBackgroundToModeFinal(mode, file) {
+      const screen = mode === 'home' ? screens.home : screens[mode];
+      if (!screen) return;
+
+      const resolved = await resolveBackgroundFileFinal(file, mode);
+      if (!resolved) return;
+
+      const bgImage = `url('${resolved}') center / cover no-repeat`;
+
+      if (mode === 'meditation') {
+        screen.style.setProperty('background',
+          `radial-gradient(circle at 50% 48%, rgba(12, 31, 46, .015), rgba(0, 7, 12, .14) 68%, rgba(0, 4, 8, .36) 100%),
+           linear-gradient(rgba(0, 8, 14, .02), rgba(0, 8, 14, .10)),
+           ${bgImage}`,
+          'important'
+        );
+      } else if (mode === 'breathing') {
+        screen.style.setProperty('background',
+          `linear-gradient(180deg, rgba(2, 8, 18, .015), rgba(2, 8, 18, .07) 54%, rgba(2, 8, 18, .18) 100%),
+           ${bgImage},
+           linear-gradient(180deg, #05162c 0%, #0a274a 48%, #06182e 70%, #02070d 100%)`,
+          'important'
+        );
+      } else if (mode === 'dotmove') {
+        screen.style.setProperty('background',
+          `linear-gradient(180deg, rgba(2, 8, 18, .01), rgba(2, 8, 18, .045) 52%, rgba(2, 8, 18, .14) 100%),
+           ${bgImage},
+           linear-gradient(180deg, #06172d, #02070d)`,
+          'important'
+        );
+      } else {
+        screen.style.setProperty('background',
+          `linear-gradient(180deg, rgba(0, 8, 18, .015), rgba(0, 8, 18, .055) 52%, rgba(0, 8, 18, .16) 100%),
+           ${bgImage}`,
+          'important'
+        );
+      }
+    }
+
+    async function applyAllSelectedBackgroundsFinal() {
+      for (const mode of ['home', 'meditation', 'breathing', 'dotmove']) {
+        await applyBackgroundToModeFinal(mode, getBackgroundFileForMode(mode));
+      }
+    }
+
+    function saveBackgroundSelectionsFinal() {
+      try {
+        localStorage.setItem('mindfulBackgroundSelections', JSON.stringify(backgroundSelections));
+      } catch (e) {}
+    }
+
+    async function renderBackgroundChoicesFinal() {
+      const grid = document.getElementById('backgroundChoiceGrid');
+      const targetSelect = document.getElementById('backgroundTarget');
+      if (!grid || !targetSelect || !Array.isArray(BACKGROUND_OPTIONS)) return;
+
+      const target = targetSelect.value || 'home';
+      const selectedFile = getBackgroundFileForMode(target);
+
+      grid.innerHTML = '';
+
+      try {
+        if (typeof getCustomBackgroundUrl === 'function') {
+          const customUrl = await getCustomBackgroundUrl(target);
+          if (customUrl || selectedFile === `custom:${target}`) {
+            const customBtn = document.createElement('button');
+            customBtn.type = 'button';
+            customBtn.className = 'background-choice' + (selectedFile === `custom:${target}` ? ' active' : '');
+            customBtn.setAttribute('aria-label', 'Use your custom image background');
+
+            const img = document.createElement('img');
+            img.src = customUrl || DEFAULT_BACKGROUNDS[target];
+            img.alt = '';
+
+            const label = document.createElement('span');
+            label.textContent = 'Your Image';
+
+            customBtn.appendChild(img);
+            customBtn.appendChild(label);
+
+            customBtn.onclick = async event => {
+              event.preventDefault();
+              event.stopPropagation();
+
+              backgroundSelections[target] = `custom:${target}`;
+              saveBackgroundSelectionsFinal();
+              await applyBackgroundToModeFinal(target, backgroundSelections[target]);
+              await renderBackgroundChoicesFinal();
+              setBackgroundPickerStatusSafe(`Your image applied to ${getBackgroundTargetLabel(target)}.`);
+            };
+
+            grid.appendChild(customBtn);
+          }
+        }
+      } catch (e) {}
+
+      BACKGROUND_OPTIONS.forEach(option => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'background-choice' + (option.file === selectedFile ? ' active' : '');
+        btn.setAttribute('aria-label', `Use ${option.label} background`);
+
+        const img = document.createElement('img');
+        img.src = option.file;
+        img.alt = '';
+
+        const label = document.createElement('span');
+        label.textContent = option.label;
+
+        btn.appendChild(img);
+        btn.appendChild(label);
+
+        btn.onclick = async event => {
+          event.preventDefault();
+          event.stopPropagation();
+
+          backgroundSelections[target] = option.file;
+          saveBackgroundSelectionsFinal();
+          await applyBackgroundToModeFinal(target, option.file);
+          await renderBackgroundChoicesFinal();
+          setBackgroundPickerStatusSafe(`${option.label} applied to ${getBackgroundTargetLabel(target)}.`);
+        };
+
+        grid.appendChild(btn);
+      });
+    }
+
+    async function resetBackgroundSelectionsFinal() {
+      backgroundSelections = { ...DEFAULT_BACKGROUNDS };
+      saveBackgroundSelectionsFinal();
+
+      try {
+        if (typeof deleteCustomBackground === 'function') await deleteCustomBackground('all');
+      } catch (e) {}
+
+      try {
+        if (typeof customBackgroundObjectUrls === 'object') {
+          Object.keys(customBackgroundObjectUrls).forEach(target => {
+            try {
+              URL.revokeObjectURL(customBackgroundObjectUrls[target]);
+              delete customBackgroundObjectUrls[target];
+            } catch (e) {}
+          });
+        }
+      } catch (e) {}
+
+      const input = document.getElementById('customBackgroundFile');
+      if (input) input.value = '';
+
+      const fileName = document.getElementById('customBackgroundFileName');
+      if (fileName) fileName.textContent = 'Choose your own image';
+
+      await applyAllSelectedBackgroundsFinal();
+      await renderBackgroundChoicesFinal();
+      setBackgroundPickerStatusSafe('Backgrounds reset.');
+    }
+
+    async function loadBackgroundSelectionsFinal() {
+      try {
+        const saved = JSON.parse(localStorage.getItem('mindfulBackgroundSelections') || 'null');
+        backgroundSelections = { ...DEFAULT_BACKGROUNDS, ...(saved || {}) };
+      } catch (e) {
+        backgroundSelections = { ...DEFAULT_BACKGROUNDS };
+      }
+
+      await applyAllSelectedBackgroundsFinal();
+    }
+
+    function bindBackgroundPickerFinal() {
+      const targetSelect = document.getElementById('backgroundTarget');
+      if (targetSelect) {
+        targetSelect.onchange = () => {
+          renderBackgroundChoicesFinal();
+          setBackgroundPickerStatusSafe('');
+        };
+      }
+
+      const resetBtn = document.getElementById('resetBackgroundsBtn');
+      if (resetBtn) {
+        resetBtn.onclick = event => {
+          event.preventDefault();
+          event.stopPropagation();
+          resetBackgroundSelectionsFinal();
+        };
+      }
+
+      const applyImageBtn = document.getElementById('applyCustomBackgroundBtn');
+      if (applyImageBtn) {
+        applyImageBtn.onclick = event => {
+          event.preventDefault();
+          event.stopPropagation();
+          if (typeof applyCustomBackgroundFromSettings === 'function') {
+            applyCustomBackgroundFromSettings().then(() => {
+              renderBackgroundChoicesFinal();
+            }).catch(() => {
+              setBackgroundPickerStatusSafe('Could not apply this image.');
+            });
+          }
+        };
+      }
+
+      const fileInput = document.getElementById('customBackgroundFile');
+      if (fileInput) {
+        fileInput.onchange = event => {
+          selectedCustomBackgroundFile = event.target.files && event.target.files[0] ? event.target.files[0] : null;
+          const fileName = document.getElementById('customBackgroundFileName');
+          if (fileName) fileName.textContent = selectedCustomBackgroundFile ? selectedCustomBackgroundFile.name : 'Choose your own image';
+          setBackgroundPickerStatusSafe(selectedCustomBackgroundFile ? 'Image ready. It will be enhanced automatically.' : '');
+        };
+      }
+    }
+
+    const originalOpenSettingsFinal = typeof openSettings === 'function' ? openSettings : null;
+    openSettings = function() {
+      if (originalOpenSettingsFinal) originalOpenSettingsFinal();
+      bindBackgroundPickerFinal();
+      renderBackgroundChoicesFinal();
+    };
+
+    bindBackgroundPickerFinal();
+    loadBackgroundSelectionsFinal();
+
+
+  </script>
+</body>
+</html>

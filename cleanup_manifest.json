@@ -1,0 +1,52 @@
+{
+  "kept_files": [
+    "breathing_premium_natural_background.png",
+    "dot_move_music.mp3",
+    "dotmove_deep_blue_background.png",
+    "end_mode_music.mp3",
+    "extra_aurora_blue_lake.png",
+    "extra_blue_forest_lake.png",
+    "extra_deep_night_lake.png",
+    "extra_soft_mist_mountains.png",
+    "home_premium_natural_background.png",
+    "home_screen_music.mp3",
+    "index.html",
+    "meditation_mode_music.mp3",
+    "meditation_premium_natural_background.png",
+    "meditation_relaxing_music.mp3",
+    "universal_relax_music.mp3"
+  ],
+  "removed_files": [
+    "breathing_crisp_natural_background.jpg",
+    "breathing_natural_background.png",
+    "breathing_ultra_quality_background.jpg",
+    "breathingball_clean_background.png",
+    "breathingball_reference.png",
+    "dotmove_background.png",
+    "dotmove_background_only.png",
+    "dotmove_blue_background.png",
+    "dotmove_clean_background.png",
+    "dotmove_crisp_natural_background.jpg",
+    "dotmove_natural_background.png",
+    "dotmove_new_background.png",
+    "dotmove_premium_natural_background.png",
+    "dotmove_ultra_quality_background.jpg",
+    "home_background.png",
+    "home_crisp_natural_background.jpg",
+    "home_main_background.png",
+    "home_natural_background.png",
+    "home_ultra_quality_background.jpg",
+    "meditation_background.png",
+    "meditation_crisp_natural_background.jpg",
+    "meditation_natural_background.png",
+    "meditation_new_background.png",
+    "meditation_ultra_quality_background.jpg"
+  ],
+  "missing_references": [
+    "${DEFAULT_BACKGROUNDS[target] || DEFAULT_BACKGROUNDS.home}",
+    "${resolved}",
+    "${safeFile}",
+    "${url}",
+    "_enhanced.jpg"
+  ]
+}
